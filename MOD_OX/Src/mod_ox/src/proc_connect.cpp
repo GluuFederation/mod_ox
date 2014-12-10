@@ -195,6 +195,7 @@ int start_connect_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t
 		// Discovery & Register Client
 		char *issuer = Get_Ox_Storage(s_cfg->client_name, "oxd.issuer");
 		char *authorization_endpoint = Get_Ox_Storage(s_cfg->client_name, "oxd.authorization_endpoint");
+		char *token_endpoint = Get_Ox_Storage(s_cfg->client_name, "oxd.token_endpoint");
 		char *client_id = Get_Ox_Storage(s_cfg->client_name, "oxd.client_id");
 		char *client_secret = Get_Ox_Storage(s_cfg->client_name, "oxd.client_secret");
 		if ((issuer==NULL) || (authorization_endpoint==NULL) || (client_id==NULL) || (client_secret==NULL))
@@ -204,6 +205,7 @@ int start_connect_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t
 		}
 		if (issuer) free(issuer);
 		if (authorization_endpoint) free(authorization_endpoint);
+		if (token_endpoint) free(token_endpoint);
 		if (client_id) free(client_id);
 		if (client_secret) free(client_secret);
 		if (ret < 0) return show_error(r, s_cfg, "Oxd failed to discovery");
@@ -283,7 +285,7 @@ int start_connect_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t
 	}
 
 	if (client_id) params["client_id"] = client_id;
-	params["response_type"] = "token id_token";
+	if (s_cfg->response_type) params["response_type"] = s_cfg->response_type;
 	params["scope"] = "openid profile address email";
 
 	std::string redirect_uri = s_cfg->login_url;
@@ -300,6 +302,98 @@ int start_connect_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t
 	if (issuer) free(issuer);
 	if (authorization_endpoint) free(authorization_endpoint);
 	if (client_id) free(client_id);
+
+	// Redirect to seed.gluu.org
+	return modox::http_redirect(r, params.append_query(auth_end, ""));
+};
+
+/*
+* send request to Token Endpoint.
+*/
+int send_request_token(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& params) 
+{
+	int ret;
+	bool info_changed = false;
+	const apr_array_header_t    *fields;
+	int                         i;
+	apr_table_entry_t           *e = 0;
+
+	ret = 0;
+	if (check_discovery_infos(s_cfg) == true)	// unchanged
+	{
+		// Discovery & Register Client
+		char *issuer = Get_Ox_Storage(s_cfg->client_name, "oxd.issuer");
+		char *authorization_endpoint = Get_Ox_Storage(s_cfg->client_name, "oxd.authorization_endpoint");
+		char *token_endpoint = Get_Ox_Storage(s_cfg->client_name, "oxd.token_endpoint");
+		char *client_id = Get_Ox_Storage(s_cfg->client_name, "oxd.client_id");
+		char *client_secret = Get_Ox_Storage(s_cfg->client_name, "oxd.client_secret");
+		if ((issuer==NULL) || (authorization_endpoint==NULL) || (client_id==NULL) || (client_secret==NULL))
+		{
+			info_changed = true;
+			ret = ox_discovery(s_cfg);
+		}
+		if (issuer) free(issuer);
+		if (authorization_endpoint) free(authorization_endpoint);
+		if (token_endpoint) free(token_endpoint);
+		if (client_id) free(client_id);
+		if (client_secret) free(client_secret);
+		if (ret < 0) return show_error(r, s_cfg, "Oxd failed to discovery");
+	} 
+	else	// changed
+	{
+		info_changed = true;
+		// Discovery & Register Client
+		if (ox_discovery(s_cfg) < 0) return show_error(r, s_cfg, "Oxd failed to discovery");
+	}
+
+	char *token_endpoint = Get_Ox_Storage(s_cfg->client_name, "oxd.token_endpoint");
+
+	if (token_endpoint==NULL)
+	{
+		return show_error(r, s_cfg, "Oxd failed to discovery");
+	}
+
+	// build Redirect parameters
+	std::string origin_headers = "{";
+	// send headers
+	if (s_cfg->send_headers == TRUE)
+	{
+		fields = apr_table_elts(r->headers_in);
+		e = (apr_table_entry_t *) fields->elts;
+		if (fields->nelts > 0)
+		{
+			for(i = 0; i < (fields->nelts-1); i++) {
+				origin_headers += "\"";
+				origin_headers += e[i].key;
+				origin_headers += "\":\"";
+				origin_headers += e[i].val;
+				origin_headers += "\",";
+			}
+			origin_headers += "\"";
+			origin_headers += e[i].key;
+			origin_headers += "\":\"";
+			origin_headers += e[i].val;
+			origin_headers += "\"}";
+			params["origin_headers"] = origin_headers;
+		}
+	}
+
+	params["grant_type"] = "authorization_code";
+	// Get code from params
+	std::string code;
+	if (params.has_param("code"))
+		code = params.get_param("code");
+	else
+		return show_error(r, s_cfg, "unauthorized");
+	params["code"] = code;
+
+	std::string redirect_uri = s_cfg->login_url;
+	redirect_uri += "redirect";
+	params["redirect_uri"] = redirect_uri;
+
+	std::string auth_end = std::string(token_endpoint);
+
+	if (token_endpoint) free(token_endpoint);
 
 	// Redirect to seed.gluu.org
 	return modox::http_redirect(r, params.append_query(auth_end, ""));
@@ -463,6 +557,12 @@ EXIT_has_connect_session:
 		// user has been redirected, authenticate that and set cookie
 		return 0;
 	}
+	else if(params.has_param("code") && params.has_param("state")) 
+	{
+		// user has been redirected, authenticate that and set cookie
+		return -2;
+	}
+
 
 	return -1;
 };

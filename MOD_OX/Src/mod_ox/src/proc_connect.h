@@ -29,6 +29,7 @@
 #define __PROC_CONNECT_H_
 
 int start_connect_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& params);
+int send_request_token(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& params);
 int has_connect_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& params, int log_out);
 int validate_connect_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& params);
 

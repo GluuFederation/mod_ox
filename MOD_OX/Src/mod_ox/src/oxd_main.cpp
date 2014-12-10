@@ -72,6 +72,11 @@ int ox_discovery(mod_ox_config *s_cfg)
 		{
 			Set_Ox_Storage(s_cfg->client_name, "oxd.authorization_endpoint", keyValue, 0);
 		}
+
+		if (libjson_getKeyValue("data.token_endpoint", keyValue, BUF_SIZE) == RET_SUCCESS)
+		{
+			Set_Ox_Storage(s_cfg->client_name, "oxd.token_endpoint", keyValue, 0);
+		}
 	}
 	else
 	{

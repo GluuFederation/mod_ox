@@ -153,6 +153,7 @@ typedef struct {
 
 	// TRUSTED_RP_CONNECT
 	char *requested_acr;
+	char *response_type;
 
 	// TRUSTED_RP_UMA
 	char *uma_discovery_url;

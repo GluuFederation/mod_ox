@@ -66,6 +66,7 @@ static void *create_mod_ox_config(apr_pool_t *p, char *s) {
 
 	// CONNECT
 	newcfg->requested_acr = NULL;
+	newcfg->response_type = NULL;
 
 	// TRUSTED_RP_UMA
 	newcfg->uma_discovery_url = NULL;
@@ -172,6 +173,12 @@ static const char *set_mod_ox_client_name(cmd_parms *parms, void *mconfig, const
 static const char *set_mod_ox_requested_acr(cmd_parms *parms, void *mconfig, const char *arg) { 
 	mod_ox_config *s_cfg = (mod_ox_config *) mconfig;
 	s_cfg->requested_acr = (char *) arg; 
+	return NULL; 
+}
+
+static const char *set_mod_ox_response_type(cmd_parms *parms, void *mconfig, const char *arg) { 
+	mod_ox_config *s_cfg = (mod_ox_config *) mconfig;
+	s_cfg->response_type = (char *) arg; 
 	return NULL; 
 }
 
@@ -301,6 +308,8 @@ static const command_rec mod_ox_cmds[] = {
 	// TRUSTED_RP_CONNECT
 	AP_INIT_TAKE1("RequestedACR", (CMD_HAND_TYPE) set_mod_ox_requested_acr, NULL, OR_AUTHCFG,
 	"RequestedACR <string>"),
+	AP_INIT_TAKE1("ResponseType", (CMD_HAND_TYPE) set_mod_ox_response_type, NULL, OR_AUTHCFG,
+	"ResponseType <string>"),
 
 	// TRUSTED_RP_UMA
 	AP_INIT_TAKE1("UmaDiscoveryUrl", (CMD_HAND_TYPE) set_mod_ox_uma_discovery_url, NULL, OR_AUTHCFG,
@@ -423,6 +432,8 @@ static int mod_ox_check_configs(mod_ox_config *s_cfg, const int auth_type)
 	switch (auth_type)
 	{
 	case TRUSTED_RP_CONNECT:
+		if (!s_cfg->response_type)
+			return -1;		
 		return 0;
 	case TRUSTED_RP_UMA:
 		if (!s_cfg->uma_discovery_url || !s_cfg->uma_resource_name || !s_cfg->uma_rs_host || \
@@ -632,6 +643,10 @@ static int mod_ox_method_handler(request_rec *r) {
 			return modox::show_html_redirect_page(r, s_cfg->login_url);
 		// user is posting id URL, or we're in single OP mode and already have one, so try to authenticate
 		ret = start_authentication_session(r, s_cfg, params, auth_type);
+	}
+	else if (ret == -2)
+	{
+		ret = send_request_token(r, s_cfg, params);
 	}
 	else
 		return ret;

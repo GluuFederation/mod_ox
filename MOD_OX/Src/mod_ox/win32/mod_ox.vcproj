@@ -323,7 +323,7 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|x64"
-			OutputDirectory="..\..\..\..\..\Apache24\modules"
+			OutputDirectory="F:\Gluu\Apache24\modules"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="2"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops"
@@ -355,7 +355,7 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/EHsc "
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\..\..\..\Apache24\include;..\src;"
+				AdditionalIncludeDirectories="F:\Gluu\Apache24\include;..\src;"
 				PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;"
 				RuntimeLibrary="3"
 				PrecompiledHeaderFile=".\Debug/mod_uma.pch"
@@ -385,7 +385,7 @@
 				OutputFile="$(OutDir)\$(ProjectName).so"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="..\..\..\..\..\Apache24\lib"
+				AdditionalLibraryDirectories="F:\Gluu\Apache24\lib"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile=".\Debug/mod_uma.pdb"
 				SubSystem="2"
