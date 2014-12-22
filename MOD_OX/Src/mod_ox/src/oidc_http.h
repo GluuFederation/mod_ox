@@ -35,6 +35,7 @@ namespace modox {
 	int http_sendstring(request_rec *r, string s, int success_rvalue = OK);
 
 	//send Location header to given location
+	int send_form_post(request_rec *r, string location);
 	int http_redirect(request_rec *r, string location);
 
 	// show redirect page

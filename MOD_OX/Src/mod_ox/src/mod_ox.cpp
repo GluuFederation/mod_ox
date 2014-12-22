@@ -644,10 +644,6 @@ static int mod_ox_method_handler(request_rec *r) {
 		// user is posting id URL, or we're in single OP mode and already have one, so try to authenticate
 		ret = start_authentication_session(r, s_cfg, params, auth_type);
 	}
-	else if (ret == -2)
-	{
-		ret = send_request_token(r, s_cfg, params);
-	}
 	else
 		return ret;
 

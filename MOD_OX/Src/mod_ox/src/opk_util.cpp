@@ -71,11 +71,11 @@ namespace opkele {
             }
             line_size += 4;
 
-            if (line_size >= 76)
-            {
-                (*out)[o_pos++] = '\n'; /* libxml2 has problems with CRLF */
-                line_size = 0;
-            }
+//             if (line_size >= 76)
+//             {
+//                 (*out)[o_pos++] = '\n'; /* libxml2 has problems with CRLF */
+//                 line_size = 0;
+//             }
         }
         (*out)[o_pos] = '\0';   /* being save if osize will be ignored */
         *osize = o_pos;

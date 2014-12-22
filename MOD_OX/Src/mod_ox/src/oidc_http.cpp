@@ -176,13 +176,13 @@ namespace modox {
 
 	void get_session_id(request_rec *r, string cookie_name, string& session_key, string& session_value) {
 		const char * cookies_c = apr_table_get(r->headers_in, "Cookie");
-		if(cookies_c == NULL)
+		if((cookies_c == NULL) || (strlen(cookies_c) > 4095))
 			return;
 		string cookies(cookies_c);
 		//vector<string> pairs = explode(cookies, ";");
 		char cookie[4096];
 		char * pairs;
-		strcpy(cookie, cookies.c_str());
+		strcpy(cookie, cookies_c);
 		pairs = strtok (cookie,";");
 		while (pairs != NULL)
 		{

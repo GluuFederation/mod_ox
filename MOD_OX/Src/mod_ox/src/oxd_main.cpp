@@ -48,10 +48,11 @@ int ox_discovery(mod_ox_config *s_cfg)
 	int ret;
 	int responseLen;
 	char tmp[5];
+	std::string redirect_uri;
 
 	ret = oxd_discovery(s_cfg->oxd_hostaddr, s_cfg->oxd_portnum, s_cfg->discovery_url, responseStr);
 	if (ret == RET_FAILURE)
-		return -1;
+		goto OX_DISCOVERY_FAILED;
 
 	memcpy(tmp, responseStr, 4); tmp[4] = 0;
 	responseLen = atoi(tmp);
@@ -60,7 +61,7 @@ int ox_discovery(mod_ox_config *s_cfg)
 		if (libjson_getKeyValue("status", keyValue, BUF_SIZE) == RET_SUCCESS)
 		{
 			if (strcmp(keyValue, "ok"))
-				return -1;
+				goto OX_DISCOVERY_FAILED;
 		}
 
 		if (libjson_getKeyValue("data.issuer", keyValue, BUF_SIZE) == RET_SUCCESS)
@@ -80,10 +81,10 @@ int ox_discovery(mod_ox_config *s_cfg)
 	}
 	else
 	{
-		return -1;
+		goto OX_DISCOVERY_FAILED;
 	}
 
-	std::string redirect_uri = s_cfg->login_url;
+	redirect_uri = s_cfg->login_url;
 	redirect_uri += "redirect";
 	if (s_cfg->logoutredirect_url)
 		ret = oxd_register_client(s_cfg->oxd_hostaddr, s_cfg->oxd_portnum, s_cfg->discovery_url, redirect_uri.c_str(), s_cfg->logoutredirect_url, s_cfg->client_name, responseStr);
@@ -91,7 +92,7 @@ int ox_discovery(mod_ox_config *s_cfg)
 		ret = oxd_register_client(s_cfg->oxd_hostaddr, s_cfg->oxd_portnum, s_cfg->discovery_url, redirect_uri.c_str(), "", s_cfg->client_name, responseStr);
 	
 	if (ret == RET_FAILURE)
-		return -1;
+		goto OX_DISCOVERY_FAILED;
 
 	memcpy(tmp, responseStr, 4); tmp[4] = 0;
 	responseLen = atoi(tmp);
@@ -100,11 +101,11 @@ int ox_discovery(mod_ox_config *s_cfg)
 		if (libjson_getKeyValue("status", keyValue, BUF_SIZE) == RET_SUCCESS)
 		{
 			if (strcmp(keyValue, "ok"))
-				return-1;
+				goto OX_DISCOVERY_FAILED;
 		}
 		else
 		{
-			return -1;
+			goto OX_DISCOVERY_FAILED;
 		}
 
 		keyIntValue = 0;
@@ -120,27 +121,27 @@ int ox_discovery(mod_ox_config *s_cfg)
 		}
 		else
 		{
-			return -1;
+			goto OX_DISCOVERY_FAILED;
 		}
 
 		if (libjson_getKeyValue("data.client_id", keyValue, BUF_SIZE) == RET_SUCCESS)
 			Set_Ox_Storage(s_cfg->client_name, "oxd.client_id", keyValue, timeout);
 		else
-			return -1;
+			goto OX_DISCOVERY_FAILED;
 
 		if (libjson_getKeyValue("data.client_secret", keyValue, BUF_SIZE) == RET_SUCCESS)
 			Set_Ox_Storage(s_cfg->client_name, "oxd.client_secret", keyValue, timeout);
 		else
-			return -1;
+			goto OX_DISCOVERY_FAILED;
 
 		if (libjson_getKeyValue("data.registration_access_token", keyValue, BUF_SIZE) == RET_SUCCESS)
 			Set_Ox_Storage(s_cfg->client_name, "oxd.registration_access_token", keyValue, timeout);
 		else
-			return -1;
+			goto OX_DISCOVERY_FAILED;
 	}
 	else
 	{
-		return -1;
+		goto OX_DISCOVERY_FAILED;
 	}
 
 	// Save Client info into filesystem
@@ -159,6 +160,15 @@ int ox_discovery(mod_ox_config *s_cfg)
 	}
 	
 	return 0;
+
+OX_DISCOVERY_FAILED:
+	Remove_Ox_Storage(s_cfg->client_name, "oxd.issuer");
+	Remove_Ox_Storage(s_cfg->client_name, "oxd.authorization_endpoint");
+	Remove_Ox_Storage(s_cfg->client_name, "oxd.token_endpoint");
+	Remove_Ox_Storage(s_cfg->client_name, "oxd.client_id");
+	Remove_Ox_Storage(s_cfg->client_name, "oxd.client_secret");
+	Remove_Ox_Storage(s_cfg->client_name, "oxd.registration_access_token");
+	return -1;
 }
 
 /*
@@ -199,8 +209,8 @@ int ox_check_id_token(mod_ox_config *s_cfg, const char *id_token, const char *se
 		bool keyBoolValue=false;
 		if (libjson_getKeyValue("data.active", &keyBoolValue) == RET_SUCCESS)
 		{
-			if (keyBoolValue != true)
-				return -1;
+//			if (keyBoolValue != true)
+//				return -1;
 		}
 		else
 			return -1;

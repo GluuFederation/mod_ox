@@ -29,6 +29,7 @@
 #include "opk_util.h"
 #include "proc_connect.h"
 #include "oxd_main.h"
+#include "curl/curl.h"
 
 /**
 * Returns true if the current request in the connection has an
@@ -318,6 +319,8 @@ int send_request_token(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& p
 	int                         i;
 	apr_table_entry_t           *e = 0;
 
+	modox::remove_openid_vars(params);
+
 	ret = 0;
 	if (check_discovery_infos(s_cfg) == true)	// unchanged
 	{
@@ -347,9 +350,15 @@ int send_request_token(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& p
 	}
 
 	char *token_endpoint = Get_Ox_Storage(s_cfg->client_name, "oxd.token_endpoint");
+	char *client_id = Get_Ox_Storage(s_cfg->client_name, "oxd.client_id");
+	char *client_secret = Get_Ox_Storage(s_cfg->client_name, "oxd.client_secret");
 
-	if (token_endpoint==NULL)
+	if ((token_endpoint==NULL) || (client_id==NULL) || (client_secret==NULL))
 	{
+		if (token_endpoint) free(token_endpoint);
+		if (client_id) free(client_id);
+		if (client_secret) free(client_secret);
+
 		return show_error(r, s_cfg, "Oxd failed to discovery");
 	}
 
@@ -378,25 +387,39 @@ int send_request_token(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& p
 		}
 	}
 
-	params["grant_type"] = "authorization_code";
 	// Get code from params
 	std::string code;
 	if (params.has_param("code"))
 		code = params.get_param("code");
 	else
 		return show_error(r, s_cfg, "unauthorized");
+
+	params.clear();
+
+	params["grant_type"] = "authorization_code";
 	params["code"] = code;
 
 	std::string redirect_uri = s_cfg->login_url;
-	redirect_uri += "redirect";
 	params["redirect_uri"] = redirect_uri;
+
+	char authorization_in[1024], *authorization_out;
+	long len_in, len_out;
+	sprintf(authorization_in, "%s:%s", client_id, client_secret);
+	len_in = strlen(authorization_in);
+	opkele::util::encode_base64((unsigned char *)authorization_in, len_in, (unsigned char **)&authorization_out, &len_out);
+	sprintf(authorization_in, "Basic %s", authorization_out);
+	free(authorization_out);
+	apr_table_set(r->headers_out, "Authorization", authorization_in);
 
 	std::string auth_end = std::string(token_endpoint);
 
 	if (token_endpoint) free(token_endpoint);
+	if (client_id) free(client_id);
+	if (client_secret) free(client_secret);
 
 	// Redirect to seed.gluu.org
-	return modox::http_redirect(r, params.append_query(auth_end, ""));
+	return modox::send_form_post(r, params.append_query(auth_end, ""));
+//	return modox::http_redirect(r, params.append_query(auth_end, ""));
 };
 
 /*
@@ -560,12 +583,128 @@ EXIT_has_connect_session:
 	else if(params.has_param("code") && params.has_param("state")) 
 	{
 		// user has been redirected, authenticate that and set cookie
-		return -2;
+		return 0;
 	}
 
 
 	return -1;
 };
+
+//////////////////////////////////////////////////////////////////////////
+#ifdef _WIN32
+#define WIN_OS
+#else
+#define LINUX_OS
+#endif
+
+#define _DEBUG_PRINT(X)   /* X */
+
+//For commn
+#include <iostream>
+#include <string>
+#include <stdlib.h>
+#include <assert.h>
+
+#ifdef LINUX_OS
+#include <netdb.h>
+#endif
+
+#ifdef WIN_OS
+#include <Winsock2.h>
+#endif
+
+#define MAXLINE 4096
+
+
+int send_token_request(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& params, const char *code)
+{
+#ifdef WIN_OS
+	{
+		WSADATA	WsaData;
+		WSAStartup (0x0101, &WsaData);
+	}
+#endif
+
+	sockaddr_in       sin;
+	
+	int sock = (int)socket (AF_INET, SOCK_STREAM, 0);
+	if (sock == -1) {
+		return show_error(r, s_cfg, "Could not create socket to Token Endpoint");
+	}
+	sin.sin_family = AF_INET;
+	sin.sin_port = htons( (unsigned short)443);
+	
+	char *token_endpoint = Get_Ox_Storage(s_cfg->client_name, "oxd.token_endpoint");
+	char *client_id = Get_Ox_Storage(s_cfg->client_name, "oxd.client_id");
+	char *client_secret = Get_Ox_Storage(s_cfg->client_name, "oxd.client_secret");
+
+	if ((token_endpoint==NULL) || (client_id==NULL) || (client_secret==NULL))
+	{
+		if (token_endpoint) free(token_endpoint);
+		if (client_id) free(client_id);
+		if (client_secret) free(client_secret);
+
+		return show_error(r, s_cfg, "Oxd failed to discovery");
+	}
+
+	apr_uri_t apuri;
+	apr_uri_parse(r->pool, token_endpoint, &apuri);
+
+	struct hostent * host_addr = gethostbyname(apuri.hostname);
+	if(host_addr==NULL) {
+		_DEBUG_PRINT( cout<<"Unable to locate host"<<endl );
+		if (token_endpoint) free(token_endpoint);
+		if (client_id) free(client_id);
+		if (client_secret) free(client_secret);
+		return -103;
+	}
+	sin.sin_addr.s_addr = *((int*)*host_addr->h_addr_list) ;
+	_DEBUG_PRINT( cout<<"Port :"<<sin.sin_port<<", Address : "<< sin.sin_addr.s_addr<<endl);
+
+	if( connect (sock,(const struct sockaddr *)&sin, sizeof(sockaddr_in) ) == -1 ) {
+		_DEBUG_PRINT( cout<<"connect failed"<<endl ) ;
+		if (token_endpoint) free(token_endpoint);
+		if (client_id) free(client_id);
+		if (client_secret) free(client_secret);
+		return -101;
+	}
+
+	char authorization_in[1024], *authorization_out;
+	long len_in, len_out;
+	sprintf(authorization_in, "%s:%s", client_id, client_secret);
+	len_in = strlen(authorization_in);
+	opkele::util::encode_base64((unsigned char *)authorization_in, len_in, (unsigned char **)&authorization_out, &len_out);
+	sprintf(authorization_in, "Basic %s", authorization_out);
+	free(authorization_out);
+
+	if (token_endpoint) free(token_endpoint);
+	if (client_id) free(client_id);
+	if (client_secret) free(client_secret);
+
+	char query[1024];
+	sprintf(query, "grant_type=authorization_code&code=%s&redirect_uri=%s", code, s_cfg->login_url);
+
+	char sendline[MAXLINE + 1], recvline[MAXLINE + 1];
+	sprintf(sendline, 
+		"POST %s HTTP/1.1\r\n"
+		"Content-Type: application/x-www-form-urlencoded\r\n"
+		"Host: %s\r\n"
+		"Authorization: %s\r\n\r\n"
+		"%s\r\n\r\n", apuri.path, apuri.hostname, authorization_in, query);
+
+	int n;
+	n = strlen(sendline);
+	send(sock, sendline, n, 0);
+	while ((n = recv(sock, recvline, MAXLINE, 0)) > 0) {
+		recvline[n] = '\0';
+	}
+
+#ifdef WIN_OS
+	WSACleanup( );
+#endif
+
+	return 0;
+}
 
 /*
 * check the validation of session
@@ -575,71 +714,135 @@ int validate_connect_session(request_rec *r, mod_ox_config *s_cfg, opkele::param
 	std::string session_id, session_tmp;
 	int token_timeout;
 
-	// Get session id from params
-	if (params.has_param("session_id"))
-		session_tmp = params.get_param("session_id");
+	// Authorization Code Flow
+	if (params.has_param("code"))
+	{
+		std::string code;
+		// Get code from params
+		code = params.get_param("code");
+
+		send_token_request(r, s_cfg, params, code.c_str());
+	}
+	// Implicit Flow
 	else
-		modox::make_rstring(32, session_tmp);
+	{
+		// Get session id from params
+		if (params.has_param("session_id"))
+			session_tmp = params.get_param("session_id");
+		else
+			modox::make_rstring(32, session_tmp);
 
-	// Get id token from params
-	std::string id_token;
-	if (params.has_param("id_token"))
-		id_token = params.get_param("id_token");
-	else
-		return show_error(r, s_cfg, "unauthorized");
+		// Get id token from params
+		std::string id_token;
+		if (params.has_param("id_token"))
+			id_token = params.get_param("id_token");
+		else
+			return show_error(r, s_cfg, "unauthorized");
 
-	// Get access token from params
-	std::string access_token;
-	if (params.has_param("access_token"))
-		access_token = params.get_param("access_token");
-	else
-		return show_error(r, s_cfg, "unauthorized");
+		// Get access token from params
+		std::string access_token;
+		if (params.has_param("access_token"))
+			access_token = params.get_param("access_token");
+		else
+			return show_error(r, s_cfg, "unauthorized");
 
-	// Get scope from params
-	std::string scope;
-	if (params.has_param("scope"))
-		scope = params.get_param("scope");
-	else
-		return show_error(r, s_cfg, "unauthorized");
+		// Get scope from params
+		std::string scope;
+		if (params.has_param("scope"))
+			scope = params.get_param("scope");
+		else
+			return show_error(r, s_cfg, "unauthorized");
 
-	// Get state from params
-	std::string state;
-	if (params.has_param("state"))
-		state = params.get_param("state");
-	else
-		return show_error(r, s_cfg, "unauthorized");
+		// Get state from params
+		std::string state;
+		if (params.has_param("state"))
+			state = params.get_param("state");
+		else
+			return show_error(r, s_cfg, "unauthorized");
 
-	// Get expires_in from params
-	std::string expires_in;
-	if (params.has_param("expires_in"))
-		expires_in = params.get_param("expires_in");
-	else
-		return show_error(r, s_cfg, "unauthorized");
+		// Get expires_in from params
+		std::string expires_in;
+		if (params.has_param("expires_in"))
+			expires_in = params.get_param("expires_in");
+		else
+			return show_error(r, s_cfg, "unauthorized");
 
-	// session_id = session_id+"."+state
-	session_id = session_tmp+"."+state;
+		// session_id = session_id+"."+state
+		session_id = session_tmp+"."+state;
 
-	// Check status of id token
-	token_timeout = oic_check_session(s_cfg, id_token.c_str(), session_id.c_str());
-	if (token_timeout <= 0)
-		return show_error(r, s_cfg, "Oxd failed to check session");
+		// Check status of id token
+		token_timeout = oic_check_session(s_cfg, id_token.c_str(), session_id.c_str());
+		if (token_timeout <= 0)
+			return show_error(r, s_cfg, "Oxd failed to check session");
 
-	// Save paraams into memcached
-	int time_out = (int)atoi(expires_in.c_str());
-	Set_Ox_Storage(session_id.c_str(), "session_id", session_tmp.c_str(), time_out);
-	apr_table_set(r->headers_out, "OIC_SESSION_ID", session_tmp.c_str());
+		// Save paraams into memcached
+		int time_out = (int)atoi(expires_in.c_str());
+		Set_Ox_Storage(session_id.c_str(), "session_id", session_tmp.c_str(), time_out);
+		apr_table_set(r->headers_out, "OIC_SESSION_ID", session_tmp.c_str());
 
-	Set_Ox_Storage(session_id.c_str(), "id_token", id_token.c_str(), time_out);
-	apr_table_set(r->headers_out, "OIC_ID_TOKEN", id_token.c_str());
+		Set_Ox_Storage(session_id.c_str(), "id_token", id_token.c_str(), time_out);
+		apr_table_set(r->headers_out, "OIC_ID_TOKEN", id_token.c_str());
 
-	Set_Ox_Storage(session_id.c_str(), "access_token", access_token.c_str(), time_out);
-	apr_table_set(r->headers_out, "OIC_ACCESS_TOKEN", access_token.c_str());
+		Set_Ox_Storage(session_id.c_str(), "access_token", access_token.c_str(), time_out);
+		apr_table_set(r->headers_out, "OIC_ACCESS_TOKEN", access_token.c_str());
 
-	Set_Ox_Storage(session_id.c_str(), "scope", scope.c_str(), time_out);
-	apr_table_set(r->headers_out, "OIC_SCOPE", scope.c_str());
+		Set_Ox_Storage(session_id.c_str(), "scope", scope.c_str(), time_out);
+		apr_table_set(r->headers_out, "OIC_SCOPE", scope.c_str());
 
-	Set_Ox_Storage(session_id.c_str(), "state", state.c_str(), time_out);
-	apr_table_set(r->headers_out, "OIC_STATE", state.c_str());
+		Set_Ox_Storage(session_id.c_str(), "state", state.c_str(), time_out);
+		apr_table_set(r->headers_out, "OIC_STATE", state.c_str());
+	}
 
 	return set_connect_cookie(r, s_cfg, params, session_id, token_timeout);
 };
+
+int main_(void)
+{
+  CURL *curl;
+  CURLcode res;
+ 
+  curl_global_init(CURL_GLOBAL_DEFAULT);
+ 
+  curl = curl_easy_init();
+  if(curl) {
+    curl_easy_setopt(curl, CURLOPT_URL, "https://example.com/");
+ 
+#ifdef SKIP_PEER_VERIFICATION
+    /*
+     * If you want to connect to a site who isn't using a certificate that is
+     * signed by one of the certs in the CA bundle you have, you can skip the
+     * verification of the server's certificate. This makes the connection
+     * A LOT LESS SECURE.
+     *
+     * If you have a CA cert for the server stored someplace else than in the
+     * default bundle, then the CURLOPT_CAPATH option might come handy for
+     * you.
+     */ 
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+#endif
+ 
+#ifdef SKIP_HOSTNAME_VERIFICATION
+    /*
+     * If the site you're connecting to uses a different host name that what
+     * they have mentioned in their server certificate's commonName (or
+     * subjectAltName) fields, libcurl will refuse to connect. You can skip
+     * this check, but this will make the connection less secure.
+     */ 
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+#endif
+ 
+    /* Perform the request, res will get the return code */ 
+    res = curl_easy_perform(curl);
+    /* Check for errors */ 
+    if(res != CURLE_OK)
+      fprintf(stderr, "curl_easy_perform() failed: %s\n",
+              curl_easy_strerror(res));
+ 
+    /* always cleanup */ 
+    curl_easy_cleanup(curl);
+  }
+ 
+  curl_global_cleanup();
+ 
+  return 0;
+}

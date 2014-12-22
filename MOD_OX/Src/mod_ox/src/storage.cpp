@@ -28,7 +28,7 @@
 #include "mod_ox.h"
 #include "memcache.h"
 
-#define MAX_FILED_LENGTH 1024
+#define MAX_FILED_LENGTH 2048
 
 static bool memcached_init_flag = false;
 
