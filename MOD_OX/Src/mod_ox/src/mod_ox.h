@@ -133,44 +133,52 @@ typedef struct {
 } uma_am_host_config;
 
 typedef struct {
-	char *auth_ntype;
-	char *auth_ztype;
+	char *AuthnType;
+	char *CookiePath;
+	char *ApplicationDestinationUrl;
+	char *ClientCredsPath;
+	bool SendHeaders;
 
-	// General
-	char *oxd_hostaddr;
-	int oxd_portnum;
-	char *memcached_hostaddr;
-	int memcached_portnum;
-	char *credit_path;
+	// Valid only if AuthnType=SAML
+	char *SAMLRedirectUrl;
+
+	// oxd configuration
+	char *OxdHostAddr;
+	int OxdPortNum;
+
+	// memcached configuration
+	char *MemcachedHostAddr;
+	int MemcachedPortNum;
+
+	// OpenID Connect
+	char *OpenIDProvider;
+	char *OpenIDClientRedirectURIs;
+	char *OpenIDRequestedScopes;
+	char *OpenIDClientName;
+	char *OpenIDRequestedACR;
+	char *OpenIDResponseType;
+
+	// UMA
+	char *UmaAuthorizationServer;
+	char *UmaResourceName;
+	char *UmaGetScope;
+	char *UmaPutScope;
+	char *UmaPostScope;
+	char *UmaDeleteScope;
+
+	// Logout
+	char *ApplicationPostLogoutUrl;
+	char *ApplicationPostLogoutRedirectUrl;
+	char *oxLogoutUrl;
+	
+	// Etc
 	char *admin_url;
-	char *destination_url;
 	char *login_url;
-	char *logout_url;
-	char *postlogout_url;
-	char *logoutredirect_url;
-	char *discovery_url;
-	char *client_name;
-
-	// TRUSTED_RP_CONNECT
-	char *requested_acr;
-	char *response_type;
-
-	// TRUSTED_RP_UMA
-	char *uma_discovery_url;
-	char *uma_resource_name;
 	char *uma_rs_host;
 	uma_am_host_config uma_am_host[3];
 	char *uma_sent_user_claims;
-
-	// TRUSTED_RP_SAML
-	char *saml_redirect_url;
-
-	// Etc
 	const char *cookie_name;
 	int cookie_lifespan;
-	char *cookie_path;
-	char *oic_redirect_url;
-	bool send_headers;
 } mod_ox_config;
 
 /* mod_auth_openid includes */

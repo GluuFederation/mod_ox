@@ -179,23 +179,20 @@ namespace modox {
 		if((cookies_c == NULL) || (strlen(cookies_c) > 4095))
 			return;
 		string cookies(cookies_c);
-		//vector<string> pairs = explode(cookies, ";");
 		char cookie[4096];
-		char * pairs;
 		strcpy(cookie, cookies_c);
-		pairs = strtok (cookie,";");
-		while (pairs != NULL)
+		vector<string> pairs = explode(cookie, ";");
+		for(int i=0; i<pairs.size(); i++)
 		{
-			while(pairs[0] == ' ') 
-				pairs++;
-			if(!strncmp(pairs, cookie_name.c_str(), strlen(cookie_name.c_str())-1)) {
-				char *pair;
-				pair = strtok (pairs,"=");
-				session_key = pair;
-				session_value = strtok (NULL, "=");
-				return;
+			if(!strncmp(pairs[i].c_str(), cookie_name.c_str(), strlen(cookie_name.c_str())-1)) {
+				vector<string> pair = explode(pairs[i], "=");
+				if (pair.size() == 2)
+				{
+					session_key = pair[0];
+					session_value = pair[1];
+					return;
+				}
 			}
-			pairs = strtok (NULL, ";");
 		}
 /*
 		for(string::size_type i = 0; i < pairs.size(); i++) {

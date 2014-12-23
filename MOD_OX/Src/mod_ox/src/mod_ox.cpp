@@ -48,29 +48,30 @@ static void *create_mod_ox_config(apr_pool_t *p, char *s) {
 	newcfg = (mod_ox_config *) apr_pcalloc(p, sizeof(mod_ox_config));
 
 	// General
-	newcfg->auth_ntype = NULL;
-	newcfg->auth_ztype = "TRUSTED_RP";
-	newcfg->oxd_hostaddr = "localhost";
-	newcfg->oxd_portnum = 8099;
-	newcfg->memcached_hostaddr = "localhost";
-	newcfg->memcached_portnum = 11211;
-	newcfg->credit_path = NULL;
-	newcfg->destination_url = NULL;
+	newcfg->AuthnType = NULL;
+	newcfg->OxdHostAddr = "localhost";
+	newcfg->OxdPortNum = 8099;
+	newcfg->MemcachedHostAddr = "localhost";
+	newcfg->MemcachedPortNum = 11211;
+	newcfg->ClientCredsPath = NULL;
+	newcfg->ApplicationDestinationUrl = NULL;
 	newcfg->login_url = NULL;
-	newcfg->logout_url = NULL;
-	newcfg->postlogout_url = NULL;
-	newcfg->logoutredirect_url = NULL;
+	newcfg->oxLogoutUrl = NULL;
+	newcfg->ApplicationPostLogoutUrl = NULL;
+	newcfg->ApplicationPostLogoutRedirectUrl = NULL;
 	newcfg->admin_url = NULL;
-	newcfg->discovery_url = NULL; 
-	newcfg->client_name = NULL;
+	newcfg->OpenIDProvider = NULL; 
+	newcfg->OpenIDClientRedirectURIs = NULL; 
+	newcfg->OpenIDRequestedScopes = "openid";
+	newcfg->OpenIDClientName = NULL;
 
 	// CONNECT
-	newcfg->requested_acr = NULL;
-	newcfg->response_type = NULL;
+	newcfg->OpenIDRequestedACR = NULL;
+	newcfg->OpenIDResponseType = NULL;
 
 	// TRUSTED_RP_UMA
-	newcfg->uma_discovery_url = NULL;
-	newcfg->uma_resource_name = NULL;
+	newcfg->UmaAuthorizationServer = NULL;
+	newcfg->UmaResourceName = NULL;
 	newcfg->uma_rs_host = NULL;
 	memset((void *)&(newcfg->uma_am_host[0]), 0, sizeof(uma_am_host_config));
 	memset((void *)&(newcfg->uma_am_host[1]), 0, sizeof(uma_am_host_config));
@@ -78,54 +79,47 @@ static void *create_mod_ox_config(apr_pool_t *p, char *s) {
 	newcfg->uma_sent_user_claims = "givenName+issuingIDP+mail+uid";
 	
 	// TRUSTED_RP_SAML
-	newcfg->saml_redirect_url = NULL;
+	newcfg->SAMLRedirectUrl = NULL;
 
 	// Etc
 	newcfg->cookie_name = "ox_session_id";
-	newcfg->cookie_path = NULL; 
+	newcfg->CookiePath = NULL; 
 	newcfg->cookie_lifespan = 0;
-	newcfg->oic_redirect_url = NULL;
-	newcfg->send_headers = FALSE;
+	newcfg->SendHeaders = FALSE;
 	
 	return (void *) newcfg;
 }
 
 static const char *set_mod_ox_auth_ntype(cmd_parms *parms, void *mconfig, const char *arg) { 
 	mod_ox_config *s_cfg = (mod_ox_config *) mconfig;
-	s_cfg->auth_ntype = (char *) arg; 
-	return NULL; 
-}
-
-static const char *set_mod_ox_auth_ztype(cmd_parms *parms, void *mconfig, const char *arg) { 
-	mod_ox_config *s_cfg = (mod_ox_config *) mconfig;
-	s_cfg->auth_ztype = (char *) arg; 
+	s_cfg->AuthnType = (char *) arg; 
 	return NULL; 
 }
 
 // General Settings
 static const char *set_mod_ox_oxd_hostaddr(cmd_parms *parms, void *mconfig, const char *arg) { 
 	mod_ox_config *s_cfg = (mod_ox_config *) mconfig;
-	s_cfg->oxd_hostaddr = (char *) arg; 
+	s_cfg->OxdHostAddr = (char *) arg; 
 	return NULL; 
 }
 static const char *set_mod_ox_oxd_portnum(cmd_parms *parms, void *mconfig, const char *arg) {
 	mod_ox_config *s_cfg = (mod_ox_config *) mconfig;
-	s_cfg->oxd_portnum = atoi(arg);
+	s_cfg->OxdPortNum = atoi(arg);
 	return NULL;
 }
 static const char *set_mod_ox_memcached_hostaddr(cmd_parms *parms, void *mconfig, const char *arg) { 
 	mod_ox_config *s_cfg = (mod_ox_config *) mconfig;
-	s_cfg->memcached_hostaddr = (char *) arg; 
+	s_cfg->MemcachedHostAddr = (char *) arg; 
 	return NULL; 
 } 
 static const char *set_mod_ox_memcached_portnum(cmd_parms *parms, void *mconfig, const char *arg) {
 	mod_ox_config *s_cfg = (mod_ox_config *) mconfig;
-	s_cfg->memcached_portnum = atoi(arg);
+	s_cfg->MemcachedPortNum = atoi(arg);
 	return NULL;
 }
 static const char *set_mod_ox_credit_path(cmd_parms *parms, void *mconfig, const char *arg) { 
 	mod_ox_config *s_cfg = (mod_ox_config *) mconfig; 
-	s_cfg->credit_path = (char *) arg; 
+	s_cfg->ClientCredsPath = (char *) arg; 
 	return NULL; 
 }
 static const char *set_mod_ox_admin_url(cmd_parms *parms, void *mconfig, const char *arg) { 
@@ -135,7 +129,7 @@ static const char *set_mod_ox_admin_url(cmd_parms *parms, void *mconfig, const c
 }
 static const char *set_mod_ox_destination_url(cmd_parms *parms, void *mconfig, const char *arg) { 
 	mod_ox_config *s_cfg = (mod_ox_config *) mconfig; 
-	s_cfg->destination_url = (char *) arg; 
+	s_cfg->ApplicationDestinationUrl = (char *) arg; 
 	return NULL; 
 }
 static const char *set_mod_ox_login_url(cmd_parms *parms, void *mconfig, const char *arg) { 
@@ -145,52 +139,57 @@ static const char *set_mod_ox_login_url(cmd_parms *parms, void *mconfig, const c
 }
 static const char *set_mod_ox_logout_url(cmd_parms *parms, void *mconfig, const char *arg) { 
 	mod_ox_config *s_cfg = (mod_ox_config *) mconfig; 
-	s_cfg->logout_url = (char *) arg; 
+	s_cfg->oxLogoutUrl = (char *) arg; 
 	return NULL; 
 }
 static const char *set_mod_ox_postlogout_url(cmd_parms *parms, void *mconfig, const char *arg) { 
 	mod_ox_config *s_cfg = (mod_ox_config *) mconfig; 
-	s_cfg->postlogout_url = (char *) arg; 
+	s_cfg->ApplicationPostLogoutUrl = (char *) arg; 
 	return NULL; 
 }
 static const char *set_mod_ox_logoutredirect_url(cmd_parms *parms, void *mconfig, const char *arg) { 
 	mod_ox_config *s_cfg = (mod_ox_config *) mconfig; 
-	s_cfg->logoutredirect_url = (char *) arg; 
+	s_cfg->ApplicationPostLogoutRedirectUrl = (char *) arg; 
 	return NULL; 
 }
-static const char *set_mod_ox_discovery_url(cmd_parms *parms, void *mconfig, const char *arg) { 
+static const char *set_mod_ox_openid_provider(cmd_parms *parms, void *mconfig, const char *arg) { 
 	mod_ox_config *s_cfg = (mod_ox_config *) mconfig; 
-	s_cfg->discovery_url = (char *) arg; 
+	s_cfg->OpenIDProvider = (char *) arg; 
+	return NULL; 
+}
+static const char *set_mod_ox_openid_client_redirecturis(cmd_parms *parms, void *mconfig, const char *arg) { 
+	mod_ox_config *s_cfg = (mod_ox_config *) mconfig; 
+	s_cfg->OpenIDClientRedirectURIs = (char *) arg; 
 	return NULL; 
 }
 static const char *set_mod_ox_client_name(cmd_parms *parms, void *mconfig, const char *arg) { 
 	mod_ox_config *s_cfg = (mod_ox_config *) mconfig; 
-	s_cfg->client_name = (char *) arg; 
+	s_cfg->OpenIDClientName = (char *) arg; 
 	return NULL; 
 }
 
 // TRUSTED_RP_CONNECT
 static const char *set_mod_ox_requested_acr(cmd_parms *parms, void *mconfig, const char *arg) { 
 	mod_ox_config *s_cfg = (mod_ox_config *) mconfig;
-	s_cfg->requested_acr = (char *) arg; 
+	s_cfg->OpenIDRequestedACR = (char *) arg; 
 	return NULL; 
 }
 
 static const char *set_mod_ox_response_type(cmd_parms *parms, void *mconfig, const char *arg) { 
 	mod_ox_config *s_cfg = (mod_ox_config *) mconfig;
-	s_cfg->response_type = (char *) arg; 
+	s_cfg->OpenIDResponseType = (char *) arg; 
 	return NULL; 
 }
 
 // TRUSTED_RP_UMA
 static const char *set_mod_ox_uma_discovery_url(cmd_parms *parms, void *mconfig, const char *arg) { 
 	mod_ox_config *s_cfg = (mod_ox_config *) mconfig; 
-	s_cfg->uma_discovery_url = (char *) arg; 
+	s_cfg->UmaAuthorizationServer = (char *) arg; 
 	return NULL; 
 }
 static const char *set_mod_ox_uma_resource_name(cmd_parms *parms, void *mconfig, const char *arg) { 
 	mod_ox_config *s_cfg = (mod_ox_config *) mconfig; 
-	s_cfg->uma_resource_name = (char *) arg; 
+	s_cfg->UmaResourceName = (char *) arg; 
 	return NULL; 
 }
 static const char *set_mod_ox_uma_rs_host(cmd_parms *parms, void *mconfig, const char *arg) { 
@@ -247,25 +246,20 @@ static const char *set_mod_ox_uma_attr_name(cmd_parms *parms, void *mconfig, con
 // TRUSTED_RP_SAML
 static const char *set_mod_ox_saml_redirect_url(cmd_parms *parms, void *mconfig, const char *arg) {
 	mod_ox_config *s_cfg = (mod_ox_config *) mconfig;
-	s_cfg->saml_redirect_url = (char *) arg;
+	s_cfg->SAMLRedirectUrl = (char *) arg;
 	return NULL;
 }
 
 // Etc
 static const char *set_mod_ox_cookie_path(cmd_parms *parms, void *mconfig, const char *arg) { 
 	mod_ox_config *s_cfg = (mod_ox_config *) mconfig; 
-	s_cfg->cookie_path = (char *) arg; 
+	s_cfg->CookiePath = (char *) arg; 
 	return NULL; 
-}
-static const char *set_mod_ox_connect_redirect_url(cmd_parms *parms, void *mconfig, const char *arg) {
-	mod_ox_config *s_cfg = (mod_ox_config *) mconfig;
-	s_cfg->oic_redirect_url = (char *) arg;
-	return NULL;
 }
 static const char *set_mod_ox_send_headers(cmd_parms *parms, void *mconfig, const char *arg) {
 	mod_ox_config *s_cfg = (mod_ox_config *) mconfig;
 	if (!strcasecmp(arg, "on")) {
-		s_cfg->send_headers = TRUE;
+		s_cfg->SendHeaders = TRUE;
 	}
 	return NULL;
 }
@@ -273,8 +267,6 @@ static const char *set_mod_ox_send_headers(cmd_parms *parms, void *mconfig, cons
 static const command_rec mod_ox_cmds[] = {
 	AP_INIT_TAKE1("AuthnType", (CMD_HAND_TYPE) set_mod_ox_auth_ntype, NULL, OR_AUTHCFG,
 	"AuthnType <string>"),
-	AP_INIT_TAKE1("AuthzType", (CMD_HAND_TYPE) set_mod_ox_auth_ztype, NULL, OR_AUTHCFG,
-	"AuthzType <string>"),
 	AP_INIT_TAKE1("CookiePath", (CMD_HAND_TYPE) set_mod_ox_cookie_path, NULL, OR_AUTHCFG, 
 	"CookiePath <path of cookie to use>"), 
 	// General
@@ -300,8 +292,10 @@ static const command_rec mod_ox_cmds[] = {
 	"ApplicationLogoutRedirectUrl <url string>"),
 	AP_INIT_TAKE1("ClientCredsPath", (CMD_HAND_TYPE) set_mod_ox_credit_path, NULL, OR_AUTHCFG,
 	"ClientCredsPath <string>"),
-	AP_INIT_TAKE1("ConnectDiscoveryUrl", (CMD_HAND_TYPE) set_mod_ox_discovery_url, NULL, OR_AUTHCFG,
-	"ConnectDiscoveryUrl <url string>"),
+	AP_INIT_TAKE1("OpenIDProvider", (CMD_HAND_TYPE) set_mod_ox_openid_provider, NULL, OR_AUTHCFG,
+	"OpenIDProvider <url string>"),
+	AP_INIT_TAKE1("OpenIDClientRedirectURIs", (CMD_HAND_TYPE) set_mod_ox_openid_client_redirecturis, NULL, OR_AUTHCFG,
+	"OpenIDClientRedirectURIs <url string>"),
 	AP_INIT_TAKE1("ClientName", (CMD_HAND_TYPE) set_mod_ox_client_name, NULL, OR_AUTHCFG,
 	"ClientName <string>"),
 
@@ -328,8 +322,6 @@ static const command_rec mod_ox_cmds[] = {
 	"SAMLRedirectUrl <url string>"),
 
 	// Etc
-	AP_INIT_TAKE1("OicRedirectUrl", (CMD_HAND_TYPE) set_mod_ox_connect_redirect_url, NULL, OR_AUTHCFG,
-	"OicRedirectUrl <url string>"),
 	AP_INIT_TAKE1("SendHeaders", (CMD_HAND_TYPE) set_mod_ox_send_headers, NULL, OR_AUTHCFG, 
 	"SendHeaders <on off>"), 
 	
@@ -359,16 +351,12 @@ void mod_ox_log(const char *func_name, const unsigned int log_int)
 */
 static int mod_ox_check_auth_type(mod_ox_config *s_cfg)
 {
-	if (!s_cfg->auth_ntype || !s_cfg->auth_ztype)
+	if (!s_cfg->AuthnType)
 		return -1;
 
-	if (!strcasecmp(s_cfg->auth_ntype, "Connect") && !strcasecmp(s_cfg->auth_ztype, "Trusted_RP"))
+	if (!strcasecmp(s_cfg->AuthnType, "Connect"))
 		return TRUSTED_RP_CONNECT;
-	else if (!strcasecmp(s_cfg->auth_ntype, "Connect") && !strcasecmp(s_cfg->auth_ztype, "RS_ONLY"))
-		return TRUSTED_RP_CONNECT;
-	else if (!strcasecmp(s_cfg->auth_ntype, "SAML") && !strcasecmp(s_cfg->auth_ztype, "Trusted_RP"))
-		return TRUSTED_RP_SAML;
-	else if (!strcasecmp(s_cfg->auth_ntype, "SAML") && !strcasecmp(s_cfg->auth_ztype, "RS_ONLY"))
+	else if (!strcasecmp(s_cfg->AuthnType, "SAML"))
 		return TRUSTED_RP_SAML;
 	else
 		return -1;
@@ -405,9 +393,9 @@ static int mod_ox_check_predefined_url(request_rec *r, mod_ox_config *s_cfg)
 		}
 	}
 
-	if (s_cfg->logout_url)
+	if (s_cfg->oxLogoutUrl)
 	{
-		apr_uri_parse(r->pool, s_cfg->logout_url, &apuri);
+		apr_uri_parse(r->pool, s_cfg->oxLogoutUrl, &apuri);
 		if (apuri.path != NULL)
 		{
 			if (!strcmp(r->uri, apuri.path))
@@ -424,24 +412,24 @@ static int mod_ox_check_predefined_url(request_rec *r, mod_ox_config *s_cfg)
 static int mod_ox_check_configs(mod_ox_config *s_cfg, const int auth_type)
 {
 	// Check general configs
-	if (!s_cfg->oxd_hostaddr || (s_cfg->oxd_portnum<0) || !s_cfg->memcached_hostaddr || (s_cfg->memcached_portnum<0) || \
-		!s_cfg->discovery_url || !s_cfg->login_url || !s_cfg->client_name)
+	if (!s_cfg->OxdHostAddr || (s_cfg->OxdPortNum<0) || !s_cfg->MemcachedHostAddr || (s_cfg->MemcachedPortNum<0) || \
+		!s_cfg->OpenIDProvider || !s_cfg->login_url || !s_cfg->OpenIDClientName)
 		return -1;
 
 	// Check configs for each mode
 	switch (auth_type)
 	{
 	case TRUSTED_RP_CONNECT:
-		if (!s_cfg->response_type)
+		if (!s_cfg->OpenIDResponseType)
 			return -1;		
 		return 0;
 	case TRUSTED_RP_UMA:
-		if (!s_cfg->uma_discovery_url || !s_cfg->uma_resource_name || !s_cfg->uma_rs_host || \
+		if (!s_cfg->UmaAuthorizationServer || !s_cfg->UmaResourceName || !s_cfg->uma_rs_host || \
 			!s_cfg->uma_am_host[0].host || !s_cfg->uma_am_host[0].scope[0])
 			return -1;
 		return 0;
 	case TRUSTED_RP_SAML:
-		if (!s_cfg->saml_redirect_url)
+		if (!s_cfg->SAMLRedirectUrl)
 			return -1;
 		return 0;
 	}
@@ -467,10 +455,10 @@ int show_error(request_rec *r, mod_ox_config *s_cfg, char *e_message) {
 */
 int show_admin_page(request_rec *r, mod_ox_config *s_cfg) {
 	std::string uri_location;
-	char *issuer = Get_Ox_Storage(s_cfg->client_name, "oxd.issuer");
-	char *authorization_endpoint = Get_Ox_Storage(s_cfg->client_name, "oxd.authorization_endpoint");
-	char *client_id = Get_Ox_Storage(s_cfg->client_name, "oxd.client_id");
-	char *client_secret = Get_Ox_Storage(s_cfg->client_name, "oxd.client_secret");
+	char *issuer = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.issuer");
+	char *authorization_endpoint = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.authorization_endpoint");
+	char *client_id = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.client_id");
+	char *client_secret = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.client_secret");
 
 	std::string info_issuer = issuer?issuer:"";
 	std::string info_authend = authorization_endpoint?authorization_endpoint:"";
@@ -595,7 +583,7 @@ static int mod_ox_method_handler(request_rec *r) {
 		return show_error(r, s_cfg, "Invalid OX parameters, Please check ox.conf in Apache");
 
 	// 4. init memcached storage
-	if (Init_Ox_Storage(s_cfg->memcached_hostaddr, s_cfg->memcached_portnum) != 0)
+	if (Init_Ox_Storage(s_cfg->MemcachedHostAddr, s_cfg->MemcachedPortNum) != 0)
 		return show_error(r, s_cfg, "Failed to connecting Memcached Server");
 
 	// 5. if access redirect, ok

@@ -386,6 +386,7 @@
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="F:\Gluu\Apache24\lib,..\libcurl\lib"
+				IgnoreDefaultLibraryNames="msvcrt.lib"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile=".\Debug/mod_uma.pdb"
 				SubSystem="2"

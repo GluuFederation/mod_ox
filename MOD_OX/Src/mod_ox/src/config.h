@@ -10,9 +10,6 @@
 /* Define to 1 if you have the <memory.h> header file. */
 #define HAVE_MEMORY_H 1
 
-/* Whether or not SQLite3 libs are present */
-#define HAVE_SQLITE3 /**/
-
 /* Define to 1 if you have the <stdint.h> header file. */
 #define HAVE_STDINT_H 1
 
@@ -54,7 +51,7 @@
 #define PACKAGE_TARNAME "mod_ox"
 
 /* project url */
-#define PACKAGE_URL "http://ox.gluu.org/doku.php?id=oxd:mod_ox"
+#define PACKAGE_URL "http://ox.gluu.org/doku.php?id=ox:no_rp"
 
 /* Define to the version of this package. */
 #define PACKAGE_VERSION "0.1"

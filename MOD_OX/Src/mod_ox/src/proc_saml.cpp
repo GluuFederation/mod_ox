@@ -37,47 +37,47 @@ static bool check_discovery_infos(mod_ox_config *s_cfg)
 {
 	bool ret = true;
 
-	char *oxdhost = Get_Ox_Storage(s_cfg->client_name, "oxd.oxdhost");
-	char *discovery = Get_Ox_Storage(s_cfg->client_name, "connect.discovery");
-	char *redirect = Get_Ox_Storage(s_cfg->client_name, "connect.redirect");
-	char *clientname = Get_Ox_Storage(s_cfg->client_name, "oxd.clientname");
-	char *creditpath = Get_Ox_Storage(s_cfg->client_name, "oxd.creditpath");
-	char *uma_discovery = Get_Ox_Storage(s_cfg->client_name, "uma.discovery");
-	char *uma_resource = Get_Ox_Storage(s_cfg->client_name, "uma.resource");
-	char *uma_rshost = Get_Ox_Storage(s_cfg->client_name, "uma.rshost");
+	char *oxdhost = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.oxdhost");
+	char *discovery = Get_Ox_Storage(s_cfg->OpenIDClientName, "connect.discovery");
+	char *redirect = Get_Ox_Storage(s_cfg->OpenIDClientName, "connect.redirect");
+	char *clientname = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.clientname");
+	char *creditpath = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.creditpath");
+	char *uma_discovery = Get_Ox_Storage(s_cfg->OpenIDClientName, "uma.discovery");
+	char *uma_resource = Get_Ox_Storage(s_cfg->OpenIDClientName, "uma.resource");
+	char *uma_rshost = Get_Ox_Storage(s_cfg->OpenIDClientName, "uma.rshost");
 
-	if (!oxdhost || !discovery || !redirect || !clientname || !uma_discovery || !uma_resource || !uma_rshost || (!creditpath && s_cfg->credit_path))
+	if (!oxdhost || !discovery || !redirect || !clientname || !uma_discovery || !uma_resource || !uma_rshost || (!creditpath && s_cfg->ClientCredsPath))
 	{
-		Set_Ox_Storage(s_cfg->client_name, "oxd.oxdhost", s_cfg->oxd_hostaddr, 0);
-		Set_Ox_Storage(s_cfg->client_name, "connect.discovery", s_cfg->discovery_url, 0);
-		Set_Ox_Storage(s_cfg->client_name, "connect.redirect", s_cfg->login_url, 0);
-		Set_Ox_Storage(s_cfg->client_name, "oxd.clientname", s_cfg->client_name, 0);
-		Set_Ox_Storage(s_cfg->client_name, "oxd.creditpath", s_cfg->credit_path, 0);
-		Set_Ox_Storage(s_cfg->client_name, "uma.discovery", s_cfg->uma_discovery_url, 0);
-		Set_Ox_Storage(s_cfg->client_name, "uma.resource", s_cfg->uma_resource_name, 0);
-		Set_Ox_Storage(s_cfg->client_name, "uma.rshost", s_cfg->uma_rs_host, 0);
+		Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.oxdhost", s_cfg->OxdHostAddr, 0);
+		Set_Ox_Storage(s_cfg->OpenIDClientName, "connect.discovery", s_cfg->OpenIDProvider, 0);
+		Set_Ox_Storage(s_cfg->OpenIDClientName, "connect.redirect", s_cfg->login_url, 0);
+		Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.clientname", s_cfg->OpenIDClientName, 0);
+		Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.creditpath", s_cfg->ClientCredsPath, 0);
+		Set_Ox_Storage(s_cfg->OpenIDClientName, "uma.discovery", s_cfg->UmaAuthorizationServer, 0);
+		Set_Ox_Storage(s_cfg->OpenIDClientName, "uma.resource", s_cfg->UmaResourceName, 0);
+		Set_Ox_Storage(s_cfg->OpenIDClientName, "uma.rshost", s_cfg->uma_rs_host, 0);
 
 		ret = false; 
 		goto EXIT_check_discovery_infos;
 	}
 
-	if (strcmp(oxdhost, s_cfg->oxd_hostaddr) ||
-		strcmp(discovery, s_cfg->discovery_url) ||
+	if (strcmp(oxdhost, s_cfg->OxdHostAddr) ||
+		strcmp(discovery, s_cfg->OpenIDProvider) ||
 		strcmp(redirect, s_cfg->login_url) ||
-		strcmp(clientname, s_cfg->client_name) ||
-		strcmp(uma_discovery, s_cfg->uma_discovery_url) ||
-		strcmp(uma_resource, s_cfg->uma_resource_name) ||
+		strcmp(clientname, s_cfg->OpenIDClientName) ||
+		strcmp(uma_discovery, s_cfg->UmaAuthorizationServer) ||
+		strcmp(uma_resource, s_cfg->UmaResourceName) ||
 		strcmp(uma_rshost, s_cfg->uma_rs_host) || 
-		(s_cfg->credit_path && strcmp(creditpath, s_cfg->credit_path)))
+		(s_cfg->ClientCredsPath && strcmp(creditpath, s_cfg->ClientCredsPath)))
 	{
-		Set_Ox_Storage(s_cfg->client_name, "oxd.oxdhost", s_cfg->oxd_hostaddr, 0);
-		Set_Ox_Storage(s_cfg->client_name, "connect.discovery", s_cfg->discovery_url, 0);
-		Set_Ox_Storage(s_cfg->client_name, "connect.redirect", s_cfg->login_url, 0);
-		Set_Ox_Storage(s_cfg->client_name, "oxd.clientname", s_cfg->client_name, 0);
-		Set_Ox_Storage(s_cfg->client_name, "oxd.creditpath", s_cfg->credit_path, 0);
-		Set_Ox_Storage(s_cfg->client_name, "uma.discovery", s_cfg->uma_discovery_url, 0);
-		Set_Ox_Storage(s_cfg->client_name, "uma.resource", s_cfg->uma_resource_name, 0);
-		Set_Ox_Storage(s_cfg->client_name, "uma.rshost", s_cfg->uma_rs_host, 0);
+		Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.oxdhost", s_cfg->OxdHostAddr, 0);
+		Set_Ox_Storage(s_cfg->OpenIDClientName, "connect.discovery", s_cfg->OpenIDProvider, 0);
+		Set_Ox_Storage(s_cfg->OpenIDClientName, "connect.redirect", s_cfg->login_url, 0);
+		Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.clientname", s_cfg->OpenIDClientName, 0);
+		Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.creditpath", s_cfg->ClientCredsPath, 0);
+		Set_Ox_Storage(s_cfg->OpenIDClientName, "uma.discovery", s_cfg->UmaAuthorizationServer, 0);
+		Set_Ox_Storage(s_cfg->OpenIDClientName, "uma.resource", s_cfg->UmaResourceName, 0);
+		Set_Ox_Storage(s_cfg->OpenIDClientName, "uma.rshost", s_cfg->uma_rs_host, 0);
 
 		ret = false;
 		goto EXIT_check_discovery_infos;
@@ -101,8 +101,8 @@ static void set_rpt_cookie(request_rec *r, mod_ox_config *s_cfg, opkele::params_
 	// now set auth cookie, if we're doing session based auth
 	std::string session_id, hostname, path, cookie_value, state, redirect_location, args;
 	int expires_in;
-	if(s_cfg->cookie_path != NULL) 
-		path = std::string(s_cfg->cookie_path); 
+	if(s_cfg->CookiePath != NULL) 
+		path = std::string(s_cfg->CookiePath); 
 	else 
 		modox::base_dir(std::string(r->uri), path);
 
@@ -119,7 +119,7 @@ static void set_rpt_cookie(request_rec *r, mod_ox_config *s_cfg, opkele::params_
 	session_str += path + ";";
 	session_str += "identity;";
 	session_str += "username";
-	Set_Ox_Storage(s_cfg->client_name, session_id.c_str(), session_str.c_str(), expires_in);
+	Set_Ox_Storage(s_cfg->OpenIDClientName, session_id.c_str(), session_str.c_str(), expires_in);
 
 	r->args = NULL;
 
@@ -142,7 +142,7 @@ static void set_valid_session(request_rec *r, mod_ox_config *s_cfg) {
 		std::string session_cookie = session_value;
 		session_cookie += ".cookie";
 
-		Set_Ox_Storage(s_cfg->client_name, session_cookie.c_str(), session_key.c_str(), 0);
+		Set_Ox_Storage(s_cfg->OpenIDClientName, session_cookie.c_str(), session_key.c_str(), 0);
 	}
 };
 
@@ -160,10 +160,10 @@ int start_saml_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& p
 	if (check_discovery_infos(s_cfg) == true)	// unchanged
 	{
 		// Discovery & Register Client
-		char *issuer = Get_Ox_Storage(s_cfg->client_name, "oxd.issuer");
-		char *authorization_endpoint = Get_Ox_Storage(s_cfg->client_name, "oxd.authorization_endpoint");
-		char *client_id = Get_Ox_Storage(s_cfg->client_name, "oxd.client_id");
-		char *client_secret = Get_Ox_Storage(s_cfg->client_name, "oxd.client_secret");
+		char *issuer = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.issuer");
+		char *authorization_endpoint = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.authorization_endpoint");
+		char *client_id = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.client_id");
+		char *client_secret = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.client_secret");
 		if ((issuer==NULL) || (authorization_endpoint==NULL) || (client_id==NULL) || (client_secret==NULL))
 		{
 			info_changed = true;
@@ -176,7 +176,7 @@ int start_saml_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& p
 		if (ret < 0) return show_error(r, s_cfg, "Oxd failed to discovery");
 
 		// Obtain PAT & Register Resource
-		char *pat_token = Get_Ox_Storage(s_cfg->client_name, "uma.pat_token");
+		char *pat_token = Get_Ox_Storage(s_cfg->OpenIDClientName, "uma.pat_token");
 		if (pat_token==NULL)
 		{
 			if (ox_obtain_pat(s_cfg) < 0) return show_error(r, s_cfg, "Oxd failed to obtain PAT");
@@ -186,10 +186,10 @@ int start_saml_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& p
 		{
 			free(pat_token);
 
-			std::string id = std::string(s_cfg->uma_resource_name); id += "_id";
-			std::string rev = std::string(s_cfg->uma_resource_name); rev += "_rev";
-			char *resource_id = Get_Ox_Storage(s_cfg->client_name, id.c_str());
-			char *resource_rev = Get_Ox_Storage(s_cfg->client_name, rev.c_str());
+			std::string id = std::string(s_cfg->UmaResourceName); id += "_id";
+			std::string rev = std::string(s_cfg->UmaResourceName); rev += "_rev";
+			char *resource_id = Get_Ox_Storage(s_cfg->OpenIDClientName, id.c_str());
+			char *resource_rev = Get_Ox_Storage(s_cfg->OpenIDClientName, rev.c_str());
 			
 			if (!resource_id || !resource_rev)
 				ret = ox_register_resources(s_cfg);
@@ -200,7 +200,7 @@ int start_saml_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& p
 		}
 
 		// Obtain AAT Token
-		char *aat_token = Get_Ox_Storage(s_cfg->client_name, "uma.aat_token");
+		char *aat_token = Get_Ox_Storage(s_cfg->OpenIDClientName, "uma.aat_token");
 		if ((aat_token==NULL))
 		{
 			if (ox_obtain_aat(s_cfg) < 0) return show_error(r, s_cfg, "Oxd failed to obtain AAT");
@@ -209,7 +209,7 @@ int start_saml_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& p
 			free(aat_token);
 
 		// 5. Obtain RPT Token
-		char *rpt_token = Get_Ox_Storage(s_cfg->client_name, "uma.rpt_token");
+		char *rpt_token = Get_Ox_Storage(s_cfg->OpenIDClientName, "uma.rpt_token");
 		if ((rpt_token==NULL))
 		{
 			if (ox_obtain_rpt(s_cfg) < 0) return show_error(r, s_cfg, "Oxd failed to obtain RPT");
@@ -240,7 +240,7 @@ int start_saml_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& p
 	params["path"] = std::string(r->uri);
 	params["attrs"] = std::string(s_cfg->uma_sent_user_claims);
 	std::string auth_end;
-	auth_end = std::string(s_cfg->saml_redirect_url);
+	auth_end = std::string(s_cfg->SAMLRedirectUrl);
 
 	return modox::http_redirect(r, params.append_query(auth_end, "")); 
 };
@@ -265,7 +265,7 @@ int has_saml_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& par
 		std::string session_cookie = session_value;
 		session_cookie += ".cookie";
 
-		char *cookie_str = Get_Ox_Storage(s_cfg->client_name, session_cookie.c_str());
+		char *cookie_str = Get_Ox_Storage(s_cfg->OpenIDClientName, session_cookie.c_str());
 		if (cookie_str != NULL)
 		{
 			if (!strcmp(cookie_str, session_key.c_str()))
@@ -279,7 +279,7 @@ int has_saml_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& par
 		// Check session value
 		modox::session_t session;
 
-		char *session_str = Get_Ox_Storage(s_cfg->client_name, session_id.c_str());
+		char *session_str = Get_Ox_Storage(s_cfg->OpenIDClientName, session_id.c_str());
 		char *ptr6, *ptr7, *ptr8, *ptr9, *ptr10;
 		ptr6 = strtok(session_str, ";");
 		ptr7 = strtok(NULL, ";");

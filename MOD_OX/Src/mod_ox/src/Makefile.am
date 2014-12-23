@@ -26,4 +26,4 @@ install-exec-local:
 	${APXS} -i -a -n 'ox' mod_ox.la
 
 mod_ox.la: libmodox.la
-	${APXS} -lstdc++ -c -o $@ $< ${APACHE_CFLAGS}
+	${APXS} -lstdc++ -lcurl -c -o $@ $< ${APACHE_CFLAGS}

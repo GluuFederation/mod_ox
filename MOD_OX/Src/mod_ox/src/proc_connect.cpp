@@ -29,7 +29,6 @@
 #include "opk_util.h"
 #include "proc_connect.h"
 #include "oxd_main.h"
-#include "curl/curl.h"
 
 /**
 * Returns true if the current request in the connection has an
@@ -76,35 +75,35 @@ static bool check_discovery_infos(mod_ox_config *s_cfg)
 {
 	bool ret = true;
 
-	char *oxdhost = Get_Ox_Storage(s_cfg->client_name, "oxd.oxdhost");
-	char *discovery = Get_Ox_Storage(s_cfg->client_name, "connect.discovery");
-	char *redirect = Get_Ox_Storage(s_cfg->client_name, "connect.redirect");
-	char *clientname = Get_Ox_Storage(s_cfg->client_name, "oxd.clientname");
-	char *creditpath = Get_Ox_Storage(s_cfg->client_name, "oxd.creditpath");
+	char *oxdhost = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.oxdhost");
+	char *discovery = Get_Ox_Storage(s_cfg->OpenIDClientName, "connect.discovery");
+	char *redirect = Get_Ox_Storage(s_cfg->OpenIDClientName, "connect.redirect");
+	char *clientname = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.clientname");
+	char *creditpath = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.creditpath");
 
-	if (!oxdhost || !discovery || !redirect || !clientname || (!creditpath && s_cfg->credit_path))
+	if (!oxdhost || !discovery || !redirect || !clientname || (!creditpath && s_cfg->ClientCredsPath))
 	{
-		Set_Ox_Storage(s_cfg->client_name, "oxd.oxdhost", s_cfg->oxd_hostaddr, 0);
-		Set_Ox_Storage(s_cfg->client_name, "connect.discovery", s_cfg->discovery_url, 0);
-		Set_Ox_Storage(s_cfg->client_name, "connect.redirect", s_cfg->login_url, 0);
-		Set_Ox_Storage(s_cfg->client_name, "oxd.clientname", s_cfg->client_name, 0);
-		Set_Ox_Storage(s_cfg->client_name, "oxd.creditpath", s_cfg->credit_path, 0);
+		Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.oxdhost", s_cfg->OxdHostAddr, 0);
+		Set_Ox_Storage(s_cfg->OpenIDClientName, "connect.discovery", s_cfg->OpenIDProvider, 0);
+		Set_Ox_Storage(s_cfg->OpenIDClientName, "connect.redirect", s_cfg->login_url, 0);
+		Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.clientname", s_cfg->OpenIDClientName, 0);
+		Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.creditpath", s_cfg->ClientCredsPath, 0);
 
 		ret = false; 
 		goto EXIT_check_discovery_infos;
 	}
 
-	if (strcmp(oxdhost, s_cfg->oxd_hostaddr) ||
-		strcmp(discovery, s_cfg->discovery_url) ||
+	if (strcmp(oxdhost, s_cfg->OxdHostAddr) ||
+		strcmp(discovery, s_cfg->OpenIDProvider) ||
 		strcmp(redirect, s_cfg->login_url) ||
-		strcmp(clientname, s_cfg->client_name) || 
-		(s_cfg->credit_path && strcmp(creditpath, s_cfg->credit_path)))
+		strcmp(clientname, s_cfg->OpenIDClientName) || 
+		(s_cfg->ClientCredsPath && strcmp(creditpath, s_cfg->ClientCredsPath)))
 	{
-		Set_Ox_Storage(s_cfg->client_name, "oxd.oxdhost", s_cfg->oxd_hostaddr, 0);
-		Set_Ox_Storage(s_cfg->client_name, "connect.discovery", s_cfg->discovery_url, 0);
-		Set_Ox_Storage(s_cfg->client_name, "connect.redirect", s_cfg->login_url, 0);
-		Set_Ox_Storage(s_cfg->client_name, "oxd.clientname", s_cfg->client_name, 0);
-		Set_Ox_Storage(s_cfg->client_name, "oxd.creditpath", s_cfg->credit_path, 0);
+		Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.oxdhost", s_cfg->OxdHostAddr, 0);
+		Set_Ox_Storage(s_cfg->OpenIDClientName, "connect.discovery", s_cfg->OpenIDProvider, 0);
+		Set_Ox_Storage(s_cfg->OpenIDClientName, "connect.redirect", s_cfg->login_url, 0);
+		Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.clientname", s_cfg->OpenIDClientName, 0);
+		Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.creditpath", s_cfg->ClientCredsPath, 0);
 
 		ret = false;
 		goto EXIT_check_discovery_infos;
@@ -126,8 +125,8 @@ static int set_connect_cookie(request_rec *r, mod_ox_config *s_cfg, opkele::para
 	std::string hostname, path, cookie_value, id_token, access_token, scope, state, redirect_location, args;
 	int expires_in;
 
-	if(s_cfg->cookie_path != NULL) 
-		path = std::string(s_cfg->cookie_path); 
+	if(s_cfg->CookiePath != NULL) 
+		path = std::string(s_cfg->CookiePath); 
 	else 
 		modox::base_dir(std::string(r->unparsed_uri), path);
 
@@ -156,9 +155,9 @@ static int set_connect_cookie(request_rec *r, mod_ox_config *s_cfg, opkele::para
 	session_str += path + ";";
 	session_str += "identity;";
 	session_str += "username";
-	Set_Ox_Storage(s_cfg->client_name, session_id.c_str(), session_str.c_str(), expires_in);
+	Set_Ox_Storage(s_cfg->OpenIDClientName, session_id.c_str(), session_str.c_str(), expires_in);
 
-	char *return_uri = Get_Ox_Storage(s_cfg->client_name, state.c_str());
+	char *return_uri = Get_Ox_Storage(s_cfg->OpenIDClientName, state.c_str());
 	if (return_uri == NULL)
 		return show_error(r, s_cfg, "Incorrect Return URI");
 
@@ -194,11 +193,11 @@ int start_connect_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t
 	if (check_discovery_infos(s_cfg) == true)	// unchanged
 	{
 		// Discovery & Register Client
-		char *issuer = Get_Ox_Storage(s_cfg->client_name, "oxd.issuer");
-		char *authorization_endpoint = Get_Ox_Storage(s_cfg->client_name, "oxd.authorization_endpoint");
-		char *token_endpoint = Get_Ox_Storage(s_cfg->client_name, "oxd.token_endpoint");
-		char *client_id = Get_Ox_Storage(s_cfg->client_name, "oxd.client_id");
-		char *client_secret = Get_Ox_Storage(s_cfg->client_name, "oxd.client_secret");
+		char *issuer = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.issuer");
+		char *authorization_endpoint = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.authorization_endpoint");
+		char *token_endpoint = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.token_endpoint");
+		char *client_id = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.client_id");
+		char *client_secret = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.client_secret");
 		if ((issuer==NULL) || (authorization_endpoint==NULL) || (client_id==NULL) || (client_secret==NULL))
 		{
 			info_changed = true;
@@ -218,9 +217,9 @@ int start_connect_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t
 		if (ox_discovery(s_cfg) < 0) return show_error(r, s_cfg, "Oxd failed to discovery");
 	}
 
-	char *issuer = Get_Ox_Storage(s_cfg->client_name, "oxd.issuer");
-	char *authorization_endpoint = Get_Ox_Storage(s_cfg->client_name, "oxd.authorization_endpoint");
-	char *client_id = Get_Ox_Storage(s_cfg->client_name, "oxd.client_id");
+	char *issuer = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.issuer");
+	char *authorization_endpoint = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.authorization_endpoint");
+	char *client_id = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.client_id");
 
 	if ((issuer==NULL) || (authorization_endpoint==NULL) || (client_id==NULL))
 	{
@@ -244,26 +243,26 @@ int start_connect_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t
 	params["state"] = state;
 	if(params.has_param("target")) 
 	{
-		Set_Ox_Storage(s_cfg->client_name, state.c_str(), params.get_param("target").c_str(), 0);
+		Set_Ox_Storage(s_cfg->OpenIDClientName, state.c_str(), params.get_param("target").c_str(), 0);
 	}
 	else
 	{
 		std::string target_location;
-		if (s_cfg->destination_url)
+		if (s_cfg->ApplicationDestinationUrl)
 		{
-			Set_Ox_Storage(s_cfg->client_name, state.c_str(), s_cfg->destination_url, 0);
+			Set_Ox_Storage(s_cfg->OpenIDClientName, state.c_str(), s_cfg->ApplicationDestinationUrl, 0);
 		} 
 		else
 		{
 			full_uri(r, target_location, s_cfg, r->uri);
-			Set_Ox_Storage(s_cfg->client_name, state.c_str(), target_location.c_str(), 0);
+			Set_Ox_Storage(s_cfg->OpenIDClientName, state.c_str(), target_location.c_str(), 0);
 		}
 	}
 
 	// build Redirect parameters
 	std::string origin_headers = "{";
 	// send headers
-	if (s_cfg->send_headers == TRUE)
+	if (s_cfg->SendHeaders == TRUE)
 	{
 		fields = apr_table_elts(r->headers_in);
 		e = (apr_table_entry_t *) fields->elts;
@@ -286,17 +285,17 @@ int start_connect_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t
 	}
 
 	if (client_id) params["client_id"] = client_id;
-	if (s_cfg->response_type) params["response_type"] = s_cfg->response_type;
-	params["scope"] = "openid profile address email";
+	if (s_cfg->OpenIDResponseType) params["response_type"] = s_cfg->OpenIDResponseType;
+	params["scope"] = s_cfg->OpenIDRequestedScopes;
 
 	std::string redirect_uri = s_cfg->login_url;
 	redirect_uri += "redirect";
 	params["redirect_uri"] = redirect_uri;
 
 	std::string requested_acr = "[\"";
-	requested_acr += s_cfg->requested_acr;
+	requested_acr += s_cfg->OpenIDRequestedACR;
 	requested_acr += "\"]";
-	if (s_cfg->requested_acr) params["acr_values"] = requested_acr;
+	if (s_cfg->OpenIDRequestedACR) params["acr_values"] = requested_acr;
 	
 	std::string auth_end = std::string(authorization_endpoint);
 
@@ -306,120 +305,6 @@ int start_connect_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t
 
 	// Redirect to seed.gluu.org
 	return modox::http_redirect(r, params.append_query(auth_end, ""));
-};
-
-/*
-* send request to Token Endpoint.
-*/
-int send_request_token(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& params) 
-{
-	int ret;
-	bool info_changed = false;
-	const apr_array_header_t    *fields;
-	int                         i;
-	apr_table_entry_t           *e = 0;
-
-	modox::remove_openid_vars(params);
-
-	ret = 0;
-	if (check_discovery_infos(s_cfg) == true)	// unchanged
-	{
-		// Discovery & Register Client
-		char *issuer = Get_Ox_Storage(s_cfg->client_name, "oxd.issuer");
-		char *authorization_endpoint = Get_Ox_Storage(s_cfg->client_name, "oxd.authorization_endpoint");
-		char *token_endpoint = Get_Ox_Storage(s_cfg->client_name, "oxd.token_endpoint");
-		char *client_id = Get_Ox_Storage(s_cfg->client_name, "oxd.client_id");
-		char *client_secret = Get_Ox_Storage(s_cfg->client_name, "oxd.client_secret");
-		if ((issuer==NULL) || (authorization_endpoint==NULL) || (client_id==NULL) || (client_secret==NULL))
-		{
-			info_changed = true;
-			ret = ox_discovery(s_cfg);
-		}
-		if (issuer) free(issuer);
-		if (authorization_endpoint) free(authorization_endpoint);
-		if (token_endpoint) free(token_endpoint);
-		if (client_id) free(client_id);
-		if (client_secret) free(client_secret);
-		if (ret < 0) return show_error(r, s_cfg, "Oxd failed to discovery");
-	} 
-	else	// changed
-	{
-		info_changed = true;
-		// Discovery & Register Client
-		if (ox_discovery(s_cfg) < 0) return show_error(r, s_cfg, "Oxd failed to discovery");
-	}
-
-	char *token_endpoint = Get_Ox_Storage(s_cfg->client_name, "oxd.token_endpoint");
-	char *client_id = Get_Ox_Storage(s_cfg->client_name, "oxd.client_id");
-	char *client_secret = Get_Ox_Storage(s_cfg->client_name, "oxd.client_secret");
-
-	if ((token_endpoint==NULL) || (client_id==NULL) || (client_secret==NULL))
-	{
-		if (token_endpoint) free(token_endpoint);
-		if (client_id) free(client_id);
-		if (client_secret) free(client_secret);
-
-		return show_error(r, s_cfg, "Oxd failed to discovery");
-	}
-
-	// build Redirect parameters
-	std::string origin_headers = "{";
-	// send headers
-	if (s_cfg->send_headers == TRUE)
-	{
-		fields = apr_table_elts(r->headers_in);
-		e = (apr_table_entry_t *) fields->elts;
-		if (fields->nelts > 0)
-		{
-			for(i = 0; i < (fields->nelts-1); i++) {
-				origin_headers += "\"";
-				origin_headers += e[i].key;
-				origin_headers += "\":\"";
-				origin_headers += e[i].val;
-				origin_headers += "\",";
-			}
-			origin_headers += "\"";
-			origin_headers += e[i].key;
-			origin_headers += "\":\"";
-			origin_headers += e[i].val;
-			origin_headers += "\"}";
-			params["origin_headers"] = origin_headers;
-		}
-	}
-
-	// Get code from params
-	std::string code;
-	if (params.has_param("code"))
-		code = params.get_param("code");
-	else
-		return show_error(r, s_cfg, "unauthorized");
-
-	params.clear();
-
-	params["grant_type"] = "authorization_code";
-	params["code"] = code;
-
-	std::string redirect_uri = s_cfg->login_url;
-	params["redirect_uri"] = redirect_uri;
-
-	char authorization_in[1024], *authorization_out;
-	long len_in, len_out;
-	sprintf(authorization_in, "%s:%s", client_id, client_secret);
-	len_in = strlen(authorization_in);
-	opkele::util::encode_base64((unsigned char *)authorization_in, len_in, (unsigned char **)&authorization_out, &len_out);
-	sprintf(authorization_in, "Basic %s", authorization_out);
-	free(authorization_out);
-	apr_table_set(r->headers_out, "Authorization", authorization_in);
-
-	std::string auth_end = std::string(token_endpoint);
-
-	if (token_endpoint) free(token_endpoint);
-	if (client_id) free(client_id);
-	if (client_secret) free(client_secret);
-
-	// Redirect to seed.gluu.org
-	return modox::send_form_post(r, params.append_query(auth_end, ""));
-//	return modox::http_redirect(r, params.append_query(auth_end, ""));
 };
 
 /*
@@ -438,7 +323,7 @@ int has_connect_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& 
 		modox::session_t session;
 
 		// Get Session String
-		char *session_str = Get_Ox_Storage(s_cfg->client_name, session_value.c_str());
+		char *session_str = Get_Ox_Storage(s_cfg->OpenIDClientName, session_value.c_str());
 		if (!session_str)
 			goto EXIT_has_connect_session;
 
@@ -451,26 +336,26 @@ int has_connect_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& 
 			if (id_token_str != NULL)
 				strcpy(id_token, id_token_str);
 			free(id_token_str);
-			Remove_Ox_Storage(s_cfg->client_name, session_value.c_str());
+			Remove_Ox_Storage(s_cfg->OpenIDClientName, session_value.c_str());
 			apr_table_clear(r->subprocess_env);
 			Remove_Ox_Storage(session_value.c_str(), "session_id");
 			Remove_Ox_Storage(session_value.c_str(), "id_token");
 			Remove_Ox_Storage(session_value.c_str(), "access_token");
 			Remove_Ox_Storage(session_value.c_str(), "scope");
 			Remove_Ox_Storage(session_value.c_str(), "state");
-			Remove_Ox_Storage(s_cfg->client_name, session_id.c_str());
+			Remove_Ox_Storage(s_cfg->OpenIDClientName, session_id.c_str());
 
 			if (session_str) free(session_str);
 
 			params.clear();
-			if (s_cfg->postlogout_url)
+			if (s_cfg->ApplicationPostLogoutUrl)
 			{
 				params["id_token_hint"] = id_token;
-				if (s_cfg->logoutredirect_url != NULL)
-					params["post_logout_redirect_uri"] = s_cfg->logoutredirect_url;
+				if (s_cfg->ApplicationPostLogoutRedirectUrl != NULL)
+					params["post_logout_redirect_uri"] = s_cfg->ApplicationPostLogoutRedirectUrl;
 				else
 					params["post_logout_redirect_uri"] = "";
-				std::string redirect_end = std::string(s_cfg->postlogout_url);
+				std::string redirect_end = std::string(s_cfg->ApplicationPostLogoutUrl);
 				return modox::http_redirect(r, params.append_query(redirect_end, ""));
 			}
 
@@ -590,129 +475,37 @@ EXIT_has_connect_session:
 	return -1;
 };
 
-//////////////////////////////////////////////////////////////////////////
-#ifdef _WIN32
-#define WIN_OS
-#else
-#define LINUX_OS
-#endif
-
-#define _DEBUG_PRINT(X)   /* X */
-
-//For commn
-#include <iostream>
-#include <string>
-#include <stdlib.h>
-#include <assert.h>
-
-#ifdef LINUX_OS
-#include <netdb.h>
-#endif
-
-#ifdef WIN_OS
-#include <Winsock2.h>
-#endif
-
-#define MAXLINE 4096
-
-
-int send_token_request(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& params, const char *code)
-{
-#ifdef WIN_OS
-	{
-		WSADATA	WsaData;
-		WSAStartup (0x0101, &WsaData);
-	}
-#endif
-
-	sockaddr_in       sin;
-	
-	int sock = (int)socket (AF_INET, SOCK_STREAM, 0);
-	if (sock == -1) {
-		return show_error(r, s_cfg, "Could not create socket to Token Endpoint");
-	}
-	sin.sin_family = AF_INET;
-	sin.sin_port = htons( (unsigned short)443);
-	
-	char *token_endpoint = Get_Ox_Storage(s_cfg->client_name, "oxd.token_endpoint");
-	char *client_id = Get_Ox_Storage(s_cfg->client_name, "oxd.client_id");
-	char *client_secret = Get_Ox_Storage(s_cfg->client_name, "oxd.client_secret");
-
-	if ((token_endpoint==NULL) || (client_id==NULL) || (client_secret==NULL))
-	{
-		if (token_endpoint) free(token_endpoint);
-		if (client_id) free(client_id);
-		if (client_secret) free(client_secret);
-
-		return show_error(r, s_cfg, "Oxd failed to discovery");
-	}
-
-	apr_uri_t apuri;
-	apr_uri_parse(r->pool, token_endpoint, &apuri);
-
-	struct hostent * host_addr = gethostbyname(apuri.hostname);
-	if(host_addr==NULL) {
-		_DEBUG_PRINT( cout<<"Unable to locate host"<<endl );
-		if (token_endpoint) free(token_endpoint);
-		if (client_id) free(client_id);
-		if (client_secret) free(client_secret);
-		return -103;
-	}
-	sin.sin_addr.s_addr = *((int*)*host_addr->h_addr_list) ;
-	_DEBUG_PRINT( cout<<"Port :"<<sin.sin_port<<", Address : "<< sin.sin_addr.s_addr<<endl);
-
-	if( connect (sock,(const struct sockaddr *)&sin, sizeof(sockaddr_in) ) == -1 ) {
-		_DEBUG_PRINT( cout<<"connect failed"<<endl ) ;
-		if (token_endpoint) free(token_endpoint);
-		if (client_id) free(client_id);
-		if (client_secret) free(client_secret);
-		return -101;
-	}
-
-	char authorization_in[1024], *authorization_out;
-	long len_in, len_out;
-	sprintf(authorization_in, "%s:%s", client_id, client_secret);
-	len_in = strlen(authorization_in);
-	opkele::util::encode_base64((unsigned char *)authorization_in, len_in, (unsigned char **)&authorization_out, &len_out);
-	sprintf(authorization_in, "Basic %s", authorization_out);
-	free(authorization_out);
-
-	if (token_endpoint) free(token_endpoint);
-	if (client_id) free(client_id);
-	if (client_secret) free(client_secret);
-
-	char query[1024];
-	sprintf(query, "grant_type=authorization_code&code=%s&redirect_uri=%s", code, s_cfg->login_url);
-
-	char sendline[MAXLINE + 1], recvline[MAXLINE + 1];
-	sprintf(sendline, 
-		"POST %s HTTP/1.1\r\n"
-		"Content-Type: application/x-www-form-urlencoded\r\n"
-		"Host: %s\r\n"
-		"Authorization: %s\r\n\r\n"
-		"%s\r\n\r\n", apuri.path, apuri.hostname, authorization_in, query);
-
-	int n;
-	n = strlen(sendline);
-	send(sock, sendline, n, 0);
-	while ((n = recv(sock, recvline, MAXLINE, 0)) > 0) {
-		recvline[n] = '\0';
-	}
-
-#ifdef WIN_OS
-	WSACleanup( );
-#endif
-
-	return 0;
-}
-
 /*
 * check the validation of session
 */
 int validate_connect_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& params) 
 {
-	std::string session_id, session_tmp;
+	std::string session_id, session_tmp, id_token, access_token;
 	int token_timeout;
+	int time_out;
+
+	// Get session id from params
+	if (params.has_param("session_id"))
+		session_tmp = params.get_param("session_id");
+	else
+		modox::make_rstring(32, session_tmp);
+
+	// Get scope from params
+	std::string scope;
+	if (params.has_param("scope"))
+		scope = params.get_param("scope");
+	else
+		return show_error(r, s_cfg, "unauthorized");
+
+	// Get state from params
+	std::string state;
+	if (params.has_param("state"))
+		state = params.get_param("state");
+	else
+		return show_error(r, s_cfg, "unauthorized");
+
+	// session_id = session_id+"."+state
+	session_id = session_tmp+"."+state;
 
 	// Authorization Code Flow
 	if (params.has_param("code"))
@@ -721,19 +514,14 @@ int validate_connect_session(request_rec *r, mod_ox_config *s_cfg, opkele::param
 		// Get code from params
 		code = params.get_param("code");
 
-		send_token_request(r, s_cfg, params, code.c_str());
+		if (ox_get_id_token(s_cfg, code.c_str(), id_token, access_token, &time_out) < 0)
+			return show_error(r, s_cfg, "Could not get id_token");
 	}
 	// Implicit Flow
 	else
 	{
-		// Get session id from params
-		if (params.has_param("session_id"))
-			session_tmp = params.get_param("session_id");
-		else
-			modox::make_rstring(32, session_tmp);
-
 		// Get id token from params
-		std::string id_token;
+		
 		if (params.has_param("id_token"))
 			id_token = params.get_param("id_token");
 		else
@@ -746,20 +534,6 @@ int validate_connect_session(request_rec *r, mod_ox_config *s_cfg, opkele::param
 		else
 			return show_error(r, s_cfg, "unauthorized");
 
-		// Get scope from params
-		std::string scope;
-		if (params.has_param("scope"))
-			scope = params.get_param("scope");
-		else
-			return show_error(r, s_cfg, "unauthorized");
-
-		// Get state from params
-		std::string state;
-		if (params.has_param("state"))
-			state = params.get_param("state");
-		else
-			return show_error(r, s_cfg, "unauthorized");
-
 		// Get expires_in from params
 		std::string expires_in;
 		if (params.has_param("expires_in"))
@@ -767,82 +541,29 @@ int validate_connect_session(request_rec *r, mod_ox_config *s_cfg, opkele::param
 		else
 			return show_error(r, s_cfg, "unauthorized");
 
-		// session_id = session_id+"."+state
-		session_id = session_tmp+"."+state;
-
-		// Check status of id token
-		token_timeout = oic_check_session(s_cfg, id_token.c_str(), session_id.c_str());
-		if (token_timeout <= 0)
-			return show_error(r, s_cfg, "Oxd failed to check session");
-
-		// Save paraams into memcached
-		int time_out = (int)atoi(expires_in.c_str());
-		Set_Ox_Storage(session_id.c_str(), "session_id", session_tmp.c_str(), time_out);
-		apr_table_set(r->headers_out, "OIC_SESSION_ID", session_tmp.c_str());
-
-		Set_Ox_Storage(session_id.c_str(), "id_token", id_token.c_str(), time_out);
-		apr_table_set(r->headers_out, "OIC_ID_TOKEN", id_token.c_str());
-
-		Set_Ox_Storage(session_id.c_str(), "access_token", access_token.c_str(), time_out);
-		apr_table_set(r->headers_out, "OIC_ACCESS_TOKEN", access_token.c_str());
-
-		Set_Ox_Storage(session_id.c_str(), "scope", scope.c_str(), time_out);
-		apr_table_set(r->headers_out, "OIC_SCOPE", scope.c_str());
-
-		Set_Ox_Storage(session_id.c_str(), "state", state.c_str(), time_out);
-		apr_table_set(r->headers_out, "OIC_STATE", state.c_str());
+		time_out = (int)atoi(expires_in.c_str());
 	}
+
+	// Check status of id token
+	token_timeout = oic_check_session(s_cfg, id_token.c_str(), session_id.c_str());
+	if (token_timeout <= 0)
+		return show_error(r, s_cfg, "Oxd failed to check session");
+
+	// Save paraams into memcached
+	Set_Ox_Storage(session_id.c_str(), "session_id", session_tmp.c_str(), time_out);
+	apr_table_set(r->headers_out, "OIC_SESSION_ID", session_tmp.c_str());
+
+	Set_Ox_Storage(session_id.c_str(), "id_token", id_token.c_str(), time_out);
+	apr_table_set(r->headers_out, "OIC_ID_TOKEN", id_token.c_str());
+
+	Set_Ox_Storage(session_id.c_str(), "access_token", access_token.c_str(), time_out);
+	apr_table_set(r->headers_out, "OIC_ACCESS_TOKEN", access_token.c_str());
+
+	Set_Ox_Storage(session_id.c_str(), "scope", scope.c_str(), time_out);
+	apr_table_set(r->headers_out, "OIC_SCOPE", scope.c_str());
+
+	Set_Ox_Storage(session_id.c_str(), "state", state.c_str(), time_out);
+	apr_table_set(r->headers_out, "OIC_STATE", state.c_str());
 
 	return set_connect_cookie(r, s_cfg, params, session_id, token_timeout);
 };
-
-int main_(void)
-{
-  CURL *curl;
-  CURLcode res;
- 
-  curl_global_init(CURL_GLOBAL_DEFAULT);
- 
-  curl = curl_easy_init();
-  if(curl) {
-    curl_easy_setopt(curl, CURLOPT_URL, "https://example.com/");
- 
-#ifdef SKIP_PEER_VERIFICATION
-    /*
-     * If you want to connect to a site who isn't using a certificate that is
-     * signed by one of the certs in the CA bundle you have, you can skip the
-     * verification of the server's certificate. This makes the connection
-     * A LOT LESS SECURE.
-     *
-     * If you have a CA cert for the server stored someplace else than in the
-     * default bundle, then the CURLOPT_CAPATH option might come handy for
-     * you.
-     */ 
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-#endif
- 
-#ifdef SKIP_HOSTNAME_VERIFICATION
-    /*
-     * If the site you're connecting to uses a different host name that what
-     * they have mentioned in their server certificate's commonName (or
-     * subjectAltName) fields, libcurl will refuse to connect. You can skip
-     * this check, but this will make the connection less secure.
-     */ 
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
-#endif
- 
-    /* Perform the request, res will get the return code */ 
-    res = curl_easy_perform(curl);
-    /* Check for errors */ 
-    if(res != CURLE_OK)
-      fprintf(stderr, "curl_easy_perform() failed: %s\n",
-              curl_easy_strerror(res));
- 
-    /* always cleanup */ 
-    curl_easy_cleanup(curl);
-  }
- 
-  curl_global_cleanup();
- 
-  return 0;
-}
