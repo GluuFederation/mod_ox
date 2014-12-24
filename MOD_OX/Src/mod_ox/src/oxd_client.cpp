@@ -21,7 +21,7 @@
 * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 * OTHER DEALINGS IN THE SOFTWARE.
 * 
-* Created by MalinImna <malinimna@gluu.org>
+* Created by MalinImna <imna@gluu.org>
 * 
 */
 
@@ -201,7 +201,7 @@ int oxd_register_client(const char *hostname, int portnum, \
 	strcat(req, "    ");
 	strcat(&req[4], "{\"command\":\"register_client\",\"params\":{\"discovery_url\":\"");
 	strcat(req, discovery_url);
-	strcat(req, "\",\"redirect_urs\":\"");
+	strcat(req, "\",\"redirect_url\":\"");
 	strcat(req, redirect_url);
 	strcat(req, "\",\"logout_redirect_url\":\"");
 	strcat(req, logout_redirect_url);

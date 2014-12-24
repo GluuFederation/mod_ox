@@ -21,7 +21,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  * 
- * Created by MalinImna <malinimna@gluu.org>
+ * Created by MalinImna <imna@gluu.org>
  * 
  */
 
@@ -85,7 +85,7 @@ static bool check_discovery_infos(mod_ox_config *s_cfg)
 	{
 		Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.oxdhost", s_cfg->OxdHostAddr, 0);
 		Set_Ox_Storage(s_cfg->OpenIDClientName, "connect.discovery", s_cfg->OpenIDProvider, 0);
-		Set_Ox_Storage(s_cfg->OpenIDClientName, "connect.redirect", s_cfg->login_url, 0);
+		Set_Ox_Storage(s_cfg->OpenIDClientName, "connect.redirect", s_cfg->OpenIDClientRedirectURIs, 0);
 		Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.clientname", s_cfg->OpenIDClientName, 0);
 		Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.creditpath", s_cfg->ClientCredsPath, 0);
 
@@ -95,13 +95,13 @@ static bool check_discovery_infos(mod_ox_config *s_cfg)
 
 	if (strcmp(oxdhost, s_cfg->OxdHostAddr) ||
 		strcmp(discovery, s_cfg->OpenIDProvider) ||
-		strcmp(redirect, s_cfg->login_url) ||
+		strcmp(redirect, s_cfg->OpenIDClientRedirectURIs) ||
 		strcmp(clientname, s_cfg->OpenIDClientName) || 
 		(s_cfg->ClientCredsPath && strcmp(creditpath, s_cfg->ClientCredsPath)))
 	{
 		Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.oxdhost", s_cfg->OxdHostAddr, 0);
 		Set_Ox_Storage(s_cfg->OpenIDClientName, "connect.discovery", s_cfg->OpenIDProvider, 0);
-		Set_Ox_Storage(s_cfg->OpenIDClientName, "connect.redirect", s_cfg->login_url, 0);
+		Set_Ox_Storage(s_cfg->OpenIDClientName, "connect.redirect", s_cfg->OpenIDClientRedirectURIs, 0);
 		Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.clientname", s_cfg->OpenIDClientName, 0);
 		Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.creditpath", s_cfg->ClientCredsPath, 0);
 
@@ -262,7 +262,7 @@ int start_connect_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t
 	// build Redirect parameters
 	std::string origin_headers = "{";
 	// send headers
-	if (s_cfg->SendHeaders == TRUE)
+	if (s_cfg->SendHeaders == SETON)
 	{
 		fields = apr_table_elts(r->headers_in);
 		e = (apr_table_entry_t *) fields->elts;
@@ -286,13 +286,25 @@ int start_connect_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t
 
 	if (client_id) params["client_id"] = client_id;
 	if (s_cfg->OpenIDResponseType) params["response_type"] = s_cfg->OpenIDResponseType;
-	params["scope"] = s_cfg->OpenIDRequestedScopes;
+	
+	std::string scope;
+	std::vector<std::string> scope_pairs = modox::explode(s_cfg->OpenIDRequestedScopes, ";");
+	for(int i=0; i<scope_pairs.size(); i++)
+	{
+		scope += scope_pairs[i];
+		scope += " ";
+	}
+	params["scope"] = scope;
 
-	std::string redirect_uri = s_cfg->login_url;
-	redirect_uri += "redirect";
-	params["redirect_uri"] = redirect_uri;
+	params["redirect_uri"] = s_cfg->OpenIDClientRedirectURIs;
 
 	std::string requested_acr = "[\"";
+	std::vector<std::string> acr_pairs = modox::explode(s_cfg->OpenIDRequestedScopes, ";");
+	for(int i=0; i<acr_pairs.size(); i++)
+	{
+		requested_acr += acr_pairs[i];
+		requested_acr += ",";
+	}
 	requested_acr += s_cfg->OpenIDRequestedACR;
 	requested_acr += "\"]";
 	if (s_cfg->OpenIDRequestedACR) params["acr_values"] = requested_acr;
@@ -514,7 +526,7 @@ int validate_connect_session(request_rec *r, mod_ox_config *s_cfg, opkele::param
 		// Get code from params
 		code = params.get_param("code");
 
-		if (ox_get_id_token(s_cfg, code.c_str(), id_token, access_token, &time_out) < 0)
+		if (ox_get_id_token(s_cfg, code.c_str(), s_cfg->OpenIDClientRedirectURIs, id_token, access_token, &time_out) < 0)
 			return show_error(r, s_cfg, "Could not get id_token");
 	}
 	// Implicit Flow

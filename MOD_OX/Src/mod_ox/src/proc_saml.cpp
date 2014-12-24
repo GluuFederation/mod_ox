@@ -21,7 +21,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  * 
- * Created by MalinImna <malinimna@gluu.org>
+ * Created by MalinImna <imna@gluu.org>
  * 
  */
 
@@ -50,7 +50,7 @@ static bool check_discovery_infos(mod_ox_config *s_cfg)
 	{
 		Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.oxdhost", s_cfg->OxdHostAddr, 0);
 		Set_Ox_Storage(s_cfg->OpenIDClientName, "connect.discovery", s_cfg->OpenIDProvider, 0);
-		Set_Ox_Storage(s_cfg->OpenIDClientName, "connect.redirect", s_cfg->login_url, 0);
+		Set_Ox_Storage(s_cfg->OpenIDClientName, "connect.redirect", s_cfg->OpenIDClientRedirectURIs, 0);
 		Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.clientname", s_cfg->OpenIDClientName, 0);
 		Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.creditpath", s_cfg->ClientCredsPath, 0);
 		Set_Ox_Storage(s_cfg->OpenIDClientName, "uma.discovery", s_cfg->UmaAuthorizationServer, 0);
@@ -63,7 +63,7 @@ static bool check_discovery_infos(mod_ox_config *s_cfg)
 
 	if (strcmp(oxdhost, s_cfg->OxdHostAddr) ||
 		strcmp(discovery, s_cfg->OpenIDProvider) ||
-		strcmp(redirect, s_cfg->login_url) ||
+		strcmp(redirect, s_cfg->OpenIDClientRedirectURIs) ||
 		strcmp(clientname, s_cfg->OpenIDClientName) ||
 		strcmp(uma_discovery, s_cfg->UmaAuthorizationServer) ||
 		strcmp(uma_resource, s_cfg->UmaResourceName) ||
@@ -72,7 +72,7 @@ static bool check_discovery_infos(mod_ox_config *s_cfg)
 	{
 		Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.oxdhost", s_cfg->OxdHostAddr, 0);
 		Set_Ox_Storage(s_cfg->OpenIDClientName, "connect.discovery", s_cfg->OpenIDProvider, 0);
-		Set_Ox_Storage(s_cfg->OpenIDClientName, "connect.redirect", s_cfg->login_url, 0);
+		Set_Ox_Storage(s_cfg->OpenIDClientName, "connect.redirect", s_cfg->OpenIDClientRedirectURIs, 0);
 		Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.clientname", s_cfg->OpenIDClientName, 0);
 		Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.creditpath", s_cfg->ClientCredsPath, 0);
 		Set_Ox_Storage(s_cfg->OpenIDClientName, "uma.discovery", s_cfg->UmaAuthorizationServer, 0);

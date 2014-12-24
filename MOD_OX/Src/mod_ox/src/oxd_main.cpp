@@ -21,7 +21,7 @@
 * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 * OTHER DEALINGS IN THE SOFTWARE.
 * 
-* Created by MalinImna <malinimna@gluu.org>
+* Created by MalinImna <imna@gluu.org>
 * 
 */
 
@@ -327,10 +327,8 @@ int ox_obtain_pat(mod_ox_config *s_cfg)
 	char *user_id = "";
 	char *user_secret = "";
 
-	std::string redirect_uri = s_cfg->login_url;
-	redirect_uri += "redirect";
 	ret = oxd_obtain_pat(s_cfg->OxdHostAddr, s_cfg->OxdPortNum, \
-		s_cfg->OpenIDProvider, s_cfg->UmaAuthorizationServer, redirect_uri.c_str(), \
+		s_cfg->OpenIDProvider, s_cfg->UmaAuthorizationServer, s_cfg->OpenIDClientRedirectURIs, \
 		client_id, client_secret, user_id, user_secret, responseStr);
 
 	if (client_id) free(client_id);
@@ -489,10 +487,8 @@ int ox_obtain_aat(mod_ox_config *s_cfg)
 	char *user_id = "";
 	char *user_secret = "";
 
-	std::string redirect_uri = s_cfg->login_url;
-	redirect_uri += "redirect";
 	ret = oxd_obtain_aat(s_cfg->OxdHostAddr, s_cfg->OxdPortNum, \
-		s_cfg->OpenIDProvider, s_cfg->UmaAuthorizationServer, redirect_uri.c_str(), \
+		s_cfg->OpenIDProvider, s_cfg->UmaAuthorizationServer, s_cfg->OpenIDClientRedirectURIs, \
 		client_id, client_secret, user_id, user_secret, responseStr);
 
 	if (client_id) free(client_id);
@@ -866,9 +862,14 @@ size_t writeCallback(char* buf, size_t size, size_t nmemb, void* up)
 	return size*nmemb; //tell curl how many bytes we handled
 }
 
-int ox_get_id_token(mod_ox_config *s_cfg, const char *code, std::string& id_token, std::string& access_token, int *expire_in)
+int ox_get_id_token(mod_ox_config *s_cfg, const char *code, const char *redirect_uri, std::string& id_token, std::string& access_token, int *expire_in)
 {
 #define BUF_SIZE 8192
+	if (!code || !redirect_uri)
+	{
+		return -1;
+	}
+
 	char *token_endpoint = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.token_endpoint");
 	char *client_id = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.client_id");
 	char *client_secret = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.client_secret");
@@ -891,7 +892,7 @@ int ox_get_id_token(mod_ox_config *s_cfg, const char *code, std::string& id_toke
 	free(authorization_out);
 
 	char query[1024];
-	sprintf(query, "grant_type=authorization_code&code=%s&redirect_uri=%s", code, s_cfg->login_url);
+	sprintf(query, "grant_type=authorization_code&code=%s&redirect_uri=%s", code, redirect_uri);
 
 	//////////////////////////////////////////////////////////////////////////
 

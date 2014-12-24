@@ -21,7 +21,7 @@
 * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 * OTHER DEALINGS IN THE SOFTWARE.
 * 
-* Created by MalinImna <malinimna@gluu.org>
+* Created by MalinImna <imna@gluu.org>
 * 
 */
 
@@ -33,6 +33,30 @@
 static bool memcached_init_flag = false;
 
 using std::string;
+
+static string replaceAll(const string &str, const string &pattern, const string &replace)   
+
+{   
+
+	string result = str;   
+
+	string::size_type pos = 0;   
+
+	string::size_type offset = 0;   
+
+	while((pos = result.find(pattern, offset)) != string::npos)   
+	{   
+
+		result.replace(result.begin() + pos, result.begin() + pos + pattern.size(), replace);   
+
+		offset = pos + replace.size();   
+
+	}   
+
+	return result;   
+
+}
+
 
 int Init_Ox_Storage(const char *memcache_addr, const int memcache_portnum)
 {
@@ -54,7 +78,7 @@ int Set_Ox_Storage(const char *key_name, const char *key_param, const char *val,
 {
 	string key;
 
-	if (!key_param)
+	if ((!key_param) || (!val))
 		return -1;
 
 	if (!key_name)
@@ -68,6 +92,7 @@ int Set_Ox_Storage(const char *key_name, const char *key_param, const char *val,
 		key += key_param;
 	}
 
+	key = replaceAll(key, " ", ".");
 	// lifespan will be 0 if not specified by user in config - so lasts as long as browser is open.  In this case, make it last for up to a week.
 	time_t expires_on = (lifespan <= 0) ? (86400*30) : (lifespan);
 	memcache_delete(key.c_str());
@@ -97,6 +122,7 @@ char *Get_Ox_Storage(const char *key_name, const char *key_param)
 		key += key_param;
 	}
 
+	key = replaceAll(key, " ", ".");
 	char *val = memcache_get(key.c_str());
 	if(val == NULL) 
 		return NULL;

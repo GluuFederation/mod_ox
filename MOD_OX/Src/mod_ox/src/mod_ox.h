@@ -21,7 +21,7 @@
 * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 * OTHER DEALINGS IN THE SOFTWARE.
 * 
-* Created by MalinImna <malinimna@gluu.org>
+* Created by MalinImna <imna@gluu.org>
 * 
 */
 
@@ -102,9 +102,6 @@ typedef struct {
 #undef PACKAGE_VERSION
 #undef PACKAGE_URL
 
-/* Header enctype for POSTed form data */
-#define DEFAULT_POST_ENCTYPE "application/x-www-form-urlencoded"
-
 /* Attribute Exchange */
 #define AX_NAMESPACE "http://openid.net/srv/ax/1.0"
 #define DEFAULT_AX_NAMESPACE_ALIAS "ax"
@@ -117,6 +114,13 @@ typedef struct {
 
 /* Max Lengths */
 #define MAX_ATTR_NUM		20
+
+/* Flags for SendHeaders */
+enum {
+	SETNONE = -1,
+	SETOFF = 0,
+	SETON = 1
+};
 
 /* Reture values for predefined URL */
 enum {
@@ -137,7 +141,7 @@ typedef struct {
 	char *CookiePath;
 	char *ApplicationDestinationUrl;
 	char *ClientCredsPath;
-	bool SendHeaders;
+	int SendHeaders;
 
 	// Valid only if AuthnType=SAML
 	char *SAMLRedirectUrl;
@@ -173,7 +177,6 @@ typedef struct {
 	
 	// Etc
 	char *admin_url;
-	char *login_url;
 	char *uma_rs_host;
 	uma_am_host_config uma_am_host[3];
 	char *uma_sent_user_claims;

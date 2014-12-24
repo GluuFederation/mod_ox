@@ -21,7 +21,7 @@
 * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 * OTHER DEALINGS IN THE SOFTWARE.
 * 
-* Created by MalinImna <malinimna@gluu.org>
+* Created by MalinImna <imna@gluu.org>
 * 
 */
 

@@ -21,7 +21,7 @@
 * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 * OTHER DEALINGS IN THE SOFTWARE.
 * 
-* Created by MalinImna <malinimna@gluu.org>
+* Created by MalinImna <imna@gluu.org>
 * 
 */
 
@@ -37,6 +37,6 @@ int ox_obtain_rpt(mod_ox_config *s_cfg);
 int ox_register_ticket(mod_ox_config *s_cfg);
 int ox_authorize_rpt(mod_ox_config *s_cfg, const char *session_id);
 int ox_check_rpt_status(mod_ox_config *s_cfg);
-int ox_get_id_token(mod_ox_config *s_cfg, const char *code, std::string& id_token, std::string& access_token, int *expire_in);
+int ox_get_id_token(mod_ox_config *s_cfg, const char *code, const char *redirect_uri, std::string& id_token, std::string& access_token, int *expire_in);
 
 #endif
