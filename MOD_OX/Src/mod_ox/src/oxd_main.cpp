@@ -59,25 +59,54 @@ int ox_discovery(mod_ox_config *s_cfg)
 	responseLen = atoi(tmp);
 	if (libjson_init(&responseStr[4], responseLen) == RET_SUCCESS)
 	{
-		if (libjson_getKeyValue("status", keyValue, BUF_SIZE) == RET_SUCCESS)
-		{
-			if (strcmp(keyValue, "ok"))
-				goto OX_DISCOVERY_FAILED;
-		}
-
-		if (libjson_getKeyValue("data.issuer", keyValue, BUF_SIZE) == RET_SUCCESS)
+		if (libjson_getKeyValue("issuer", keyValue, BUF_SIZE) == RET_SUCCESS)
 		{
 			Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.issuer", keyValue, 0);
 		}
 
-		if (libjson_getKeyValue("data.authorization_endpoint", keyValue, BUF_SIZE) == RET_SUCCESS)
+		if (libjson_getKeyValue("dynamic_client_endpoint", keyValue, BUF_SIZE) == RET_SUCCESS)
 		{
-			Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.authorization_endpoint", keyValue, 0);
+			Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.dynamic_client_endpoint", keyValue, 0);
 		}
 
-		if (libjson_getKeyValue("data.token_endpoint", keyValue, BUF_SIZE) == RET_SUCCESS)
+		if (libjson_getKeyValue("token_endpoint", keyValue, BUF_SIZE) == RET_SUCCESS)
 		{
 			Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.token_endpoint", keyValue, 0);
+		}
+
+		if (libjson_getKeyValue("user_endpoint", keyValue, BUF_SIZE) == RET_SUCCESS)
+		{
+			Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.user_endpoint", keyValue, 0);
+		}
+
+		if (libjson_getKeyValue("introspection_endpoint", keyValue, BUF_SIZE) == RET_SUCCESS)
+		{
+			Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.introspection_endpoint", keyValue, 0);
+		}
+
+		if (libjson_getKeyValue("resource_set_registration_endpoint", keyValue, BUF_SIZE) == RET_SUCCESS)
+		{
+			Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.resource_set_registration_endpoint", keyValue, 0);
+		}
+
+		if (libjson_getKeyValue("permission_registration_endpoint", keyValue, BUF_SIZE) == RET_SUCCESS)
+		{
+			Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.permission_registration_endpoint", keyValue, 0);
+		}
+
+		if (libjson_getKeyValue("rpt_endpoint", keyValue, BUF_SIZE) == RET_SUCCESS)
+		{
+			Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.rpt_endpoint", keyValue, 0);
+		}
+
+		if (libjson_getKeyValue("authorization_request_endpoint", keyValue, BUF_SIZE) == RET_SUCCESS)
+		{
+			Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.authorization_request_endpoint", keyValue, 0);
+		}
+
+		if (libjson_getKeyValue("scope_endpoint", keyValue, BUF_SIZE) == RET_SUCCESS)
+		{
+			Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.scope_endpoint", keyValue, 0);
 		}
 	}
 	else
@@ -362,17 +391,6 @@ int ox_obtain_pat(mod_ox_config *s_cfg)
 			Set_Ox_Storage(s_cfg->OpenIDClientName, "uma.pat_token", keyValue, timeout);
 		else
 			return -1;
-/*
-		if (libjson_getKeyValue("data.pat_refresh_token", keyValue, BUF_SIZE) == RET_SUCCESS)
-			Set_Ox_Storage(s_cfg->OpenIDClientName, "uma.pat_refresh_token", keyValue, timeout);
-		else
-			return -1;
-
-		if (libjson_getKeyValue("data.authorization_code", keyValue, BUF_SIZE) == RET_SUCCESS)
-			Set_Ox_Storage(s_cfg->OpenIDClientName, "uma.authorization_code", keyValue, timeout);
-		else
-			return -1;
-*/
 	}
 	else
 	{
@@ -633,7 +651,7 @@ int ox_register_ticket(mod_ox_config *s_cfg)
 	responseLen = atoi(tmp);
 	if (libjson_init(&responseStr[4], responseLen) == RET_SUCCESS)
 	{
-		if (libjson_getKeyValue("status", keyValue, BUF_SIZE) == RET_SUCCESS)
+		if (libjson_get("status", keyValue, BUF_SIZE) == RET_SUCCESS)
 		{
 			if (strcmp(keyValue, "ok"))
 				return -1;

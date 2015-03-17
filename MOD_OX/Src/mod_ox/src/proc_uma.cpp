@@ -210,19 +210,32 @@ int start_uma_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& pa
 	{
 		// Discovery & Register Client
 		char *issuer = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.issuer");
-		char *authorization_endpoint = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.authorization_endpoint");
-		char *client_id = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.client_id");
-		char *client_secret = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.client_secret");
-		if ((issuer==NULL) || (authorization_endpoint==NULL) || (client_id==NULL) || (client_secret==NULL))
+		char *dynamic_client_endpoint = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.dynamic_client_endpoint");
+		char *token_endpoint = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.token_endpoint");
+		char *user_endpoint = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.user_endpoint");
+		char *introspection_endpoint = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.introspection_endpoint");
+		char *resource_set_registration_endpoint = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.resource_set_registration_endpoint");
+		char *permission_registration_endpoint = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.permission_registration_endpoint");
+		char *rpt_endpoint = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.rpt_endpoint");
+		char *authorization_request_endpoint = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.authorization_request_endpoint");
+		char *scope_endpoint = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.scope_endpoint");
+		if ((issuer==NULL) || (dynamic_client_endpoint==NULL) || (token_endpoint==NULL) || (user_endpoint==NULL) || 
+			(introspection_endpoint==NULL) || (resource_set_registration_endpoint==NULL) || (permission_registration_endpoint==NULL) || 
+			(rpt_endpoint==NULL) || (authorization_request_endpoint==NULL) || (scope_endpoint==NULL))
 		{
 			info_changed = true;
 			ret = ox_discovery(s_cfg);
 		}
 		if (issuer) free(issuer);
-		if (authorization_endpoint) free(authorization_endpoint);
-		if (client_id) free(client_id);
-		if (client_secret) free(client_secret);
-		if (ret < 0) return show_error(r, s_cfg, "Oxd failed to discovery");
+		if (dynamic_client_endpoint) free(dynamic_client_endpoint);
+		if (token_endpoint) free(token_endpoint);
+		if (user_endpoint) free(user_endpoint);
+		if (introspection_endpoint) free(introspection_endpoint);
+		if (resource_set_registration_endpoint) free(resource_set_registration_endpoint);
+		if (permission_registration_endpoint) free(permission_registration_endpoint);
+		if (rpt_endpoint) free(rpt_endpoint);
+		if (authorization_request_endpoint) free(authorization_request_endpoint);
+		if (scope_endpoint) free(scope_endpoint);
 
 		// Obtain PAT & Register Resource
 		char *pat_token = Get_Ox_Storage(s_cfg->OpenIDClientName, "uma.pat_token");
@@ -282,7 +295,7 @@ int start_uma_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& pa
 	}
 
 	char *issuer = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.issuer");
-	char *authorization_endpoint = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.authorization_endpoint");
+	char *authorization_endpoint = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.authorization_request_endpoint");
 	char *client_id = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.client_id");
 
 	if ((issuer==NULL) || (authorization_endpoint==NULL) || (client_id==NULL))
@@ -356,6 +369,40 @@ int has_uma_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& para
 		if (!session_str)
 			goto EXIT_has_uma_session;
 
+		{
+			char id_token[1024] = "";
+			modox::debug("deleting session: " + session_id);
+
+			char *id_token_str = Get_Ox_Storage(session_value.c_str(), "id_token");
+			if (id_token_str != NULL)
+				strcpy(id_token, id_token_str);
+			free(id_token_str);
+			Remove_Ox_Storage(s_cfg->OpenIDClientName, session_value.c_str());
+			apr_table_clear(r->subprocess_env);
+			Remove_Ox_Storage(session_value.c_str(), "session_id");
+			Remove_Ox_Storage(session_value.c_str(), "id_token");
+			Remove_Ox_Storage(session_value.c_str(), "access_token");
+			Remove_Ox_Storage(session_value.c_str(), "scope");
+			Remove_Ox_Storage(session_value.c_str(), "state");
+			Remove_Ox_Storage(s_cfg->OpenIDClientName, session_id.c_str());
+
+			if (session_str) free(session_str);
+
+			params.clear();
+			if (s_cfg->ApplicationPostLogoutUrl)
+			{
+				params["id_token_hint"] = id_token;
+				if (s_cfg->ApplicationPostLogoutRedirectUrl != NULL)
+					params["post_logout_redirect_uri"] = s_cfg->ApplicationPostLogoutRedirectUrl;
+				else
+					params["post_logout_redirect_uri"] = "";
+				std::string redirect_end = std::string(s_cfg->ApplicationPostLogoutUrl);
+				return modox::http_redirect(r, params.append_query(redirect_end, ""));
+			}
+
+			return -1;
+		}
+
 		char *ptr6, *ptr7, *ptr8, *ptr9, *ptr10;
 		ptr6 = strtok(session_str, ";");
 		ptr7 = strtok(NULL, ";");
@@ -377,15 +424,70 @@ int has_uma_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& para
 		// if session found 
 		if(session.identity != "") 
 		{
-			std::string uri_path;
-			modox::base_dir(std::string(r->uri), uri_path);
+			std::string uri_path(r->uri);
+			//modox::base_dir(std::string(r->uri), uri_path);
 			std::string valid_path(session.path);
 			// if found session has a valid path
-			if(valid_path == uri_path.substr(0, valid_path.size()) && strcmp(session.hostname.c_str(), r->hostname)==0) 
+			if((valid_path==uri_path.substr(0, valid_path.size()) ||
+				(((uri_path.size()+1)==valid_path.size())) && (strncasecmp(uri_path.c_str(), valid_path.c_str(), uri_path.size()) == 0))
+				&& strcasecmp(session.hostname.c_str(), r->hostname)==0) 
 			{
 				const char* idchar = session.identity.c_str();
 				r->user = apr_pstrdup(r->pool, idchar);
 				if (session_str) free(session_str);
+
+				// set environment variable
+				// SESSION_ID
+				char *session_id_str = Get_Ox_Storage(session_value.c_str(), "session_id");
+				if (session_id_str)
+				{
+					apr_table_set(r->subprocess_env, "OIC_SESSION_ID", session_id_str);
+					apr_table_set(r->headers_in, "OIC_SESSION_ID", session_id_str);
+					apr_table_set(r->err_headers_out, "OIC_SESSION_ID", session_id_str);
+					free(session_id_str);
+				}
+
+				// ID_TOKEN
+				char *id_token_str = Get_Ox_Storage(session_value.c_str(), "id_token");
+				if (id_token_str)
+				{
+					apr_table_set(r->subprocess_env, "OIC_ID_TOKEN", id_token_str);
+					apr_table_set(r->headers_in, "OIC_ID_TOKEN", id_token_str);
+					apr_table_set(r->err_headers_out, "OIC_ID_TOKEN", id_token_str);
+					free(id_token_str);
+				}
+
+				// ACCESS TOKEN
+				char *access_token_str = Get_Ox_Storage(session_value.c_str(), "access_token");
+				if (access_token_str)
+				{
+					apr_table_set(r->subprocess_env, "OIC_ACCESS_TOKEN", access_token_str);
+					apr_table_set(r->headers_in, "OIC_ACCESS_TOKEN", access_token_str);
+					apr_table_set(r->err_headers_out, "OIC_ACCESS_TOKEN", access_token_str);
+					free(access_token_str);
+				}
+
+				// SCOPE
+				char *scope_str = Get_Ox_Storage(session_value.c_str(), "scope");
+				if (scope_str)
+				{
+					apr_table_set(r->subprocess_env, "OIC_SCOPE", scope_str);
+					apr_table_set(r->headers_in, "OIC_SCOPE", scope_str);
+					apr_table_set(r->err_headers_out, "OIC_SCOPE", scope_str);
+					free(scope_str);
+				}
+
+				// STATE
+				char *state_str = Get_Ox_Storage(session_value.c_str(), "state");
+				char state[128];
+				if (state_str)
+				{
+					strcpy(state, state_str);
+					apr_table_set(r->subprocess_env, "OIC_STATE", state_str);
+					apr_table_set(r->headers_in, "OIC_STATE", state_str);
+					apr_table_set(r->err_headers_out, "OIC_STATE", state_str);
+					free(state_str);
+				}
 
 				return 1;
 			} 
@@ -404,6 +506,11 @@ EXIT_has_uma_session:
 		// user has been redirected, authenticate that and set cookie
 		return 0;
 	}
+	else if(params.has_param("code") && params.has_param("state")) 
+	{
+		// user has been redirected, authenticate that and set cookie
+		return 0;
+	}
 
 	return -1;
 };
@@ -413,20 +520,88 @@ EXIT_has_uma_session:
 */
 int validate_uma_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& params) 
 {
-	std::string session_id;
-	if (params.has_param("session_id"))
-		session_id = params.get_param("session_id");
-	else
-		modox::make_rstring(32, session_id);
+	std::string session_id, session_tmp, id_token, access_token;
+	int token_timeout;
+	int time_out;
 
-	std::string id_token;
-	if (params.has_param("id_token"))
-		id_token = params.get_param("id_token");
+	// Get session id from params
+	if (params.has_param("session_id"))
+		session_tmp = params.get_param("session_id");
+	else
+		modox::make_rstring(32, session_tmp);
+
+	// Get scope from params
+	std::string scope;
+	if (params.has_param("scope"))
+		scope = params.get_param("scope");
 	else
 		return show_error(r, s_cfg, "unauthorized");
 
-	if (uma_check_session(s_cfg, id_token.c_str(), session_id.c_str()) != 0)
+	// Get state from params
+	std::string state;
+	if (params.has_param("state"))
+		state = params.get_param("state");
+	else
+		return show_error(r, s_cfg, "unauthorized");
+
+	// session_id = session_id+"."+state
+	session_id = session_tmp+"."+state;
+
+	if (params.has_param("code"))
+	{
+		std::string code;
+		// Get code from params
+		code = params.get_param("code");
+
+		if (ox_get_id_token(s_cfg, code.c_str(), s_cfg->OpenIDClientRedirectURIs, id_token, access_token, &time_out) < 0)
+			return show_error(r, s_cfg, "Could not get id_token");
+	}
+	else
+	{
+		// Get id token from params
+
+		if (params.has_param("id_token"))
+			id_token = params.get_param("id_token");
+		else
+			return show_error(r, s_cfg, "unauthorized");
+
+		// Get access token from params
+		std::string access_token;
+		if (params.has_param("access_token"))
+			access_token = params.get_param("access_token");
+		else
+			return show_error(r, s_cfg, "unauthorized");
+
+		// Get expires_in from params
+		std::string expires_in;
+		if (params.has_param("expires_in"))
+			expires_in = params.get_param("expires_in");
+		else
+			return show_error(r, s_cfg, "unauthorized");
+
+		time_out = (int)atoi(expires_in.c_str());
+	}
+
+	// Check status of id token
+	token_timeout = uma_check_session(s_cfg, id_token.c_str(), session_id.c_str());
+	if (token_timeout <= 0)
 		return show_error(r, s_cfg, "Oxd failed to check session");
+
+	// Save paraams into memcached
+	Set_Ox_Storage(session_id.c_str(), "session_id", session_tmp.c_str(), time_out);
+	apr_table_set(r->headers_out, "OIC_SESSION_ID", session_tmp.c_str());
+
+	Set_Ox_Storage(session_id.c_str(), "id_token", id_token.c_str(), time_out);
+	apr_table_set(r->headers_out, "OIC_ID_TOKEN", id_token.c_str());
+
+	Set_Ox_Storage(session_id.c_str(), "access_token", access_token.c_str(), time_out);
+	apr_table_set(r->headers_out, "OIC_ACCESS_TOKEN", access_token.c_str());
+
+	Set_Ox_Storage(session_id.c_str(), "scope", scope.c_str(), time_out);
+	apr_table_set(r->headers_out, "OIC_SCOPE", scope.c_str());
+
+	Set_Ox_Storage(session_id.c_str(), "state", state.c_str(), time_out);
+	apr_table_set(r->headers_out, "OIC_STATE", state.c_str());
 
 	if (ox_obtain_rpt(s_cfg) < 0)
 		return HTTP_FORBIDDEN;
