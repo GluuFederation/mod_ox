@@ -1,0 +1,227 @@
+/* Copyright (C) 2007-2011 Gluu (http://ox.gluu.org/doku.php?id=oxd:mod_ox)
+*
+* Permission is hereby granted, free of charge, to any person
+* obtaining a copy of this software and associated documentation
+* files (the "Software"), to deal in the Software without
+* restriction, including without limitation the rights to use,
+* copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the
+* Software is furnished to do so, subject to the following
+* conditions:
+* 
+* The above copyright notice and this permission notice shall be
+* included in all copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+* HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+* OTHER DEALINGS IN THE SOFTWARE.
+* 
+* Created by MalinImna <imna@gluu.org>
+* 
+*/
+
+#include "mod_ox.h"
+
+namespace modox {
+  using namespace std;
+
+  void debug(string s) {
+#ifdef DEBUG
+    string time_s = "";
+    time_t rawtime = time(NULL);
+    tm *tm_t = localtime(&rawtime);
+    char rv[40];
+    if(strftime(rv, sizeof(rv)-1, "%a %b %d %H:%M:%S %Y", tm_t)) 
+      time_s = "[" + string(rv) + "] ";
+    s = time_s + "[" + string(PACKAGE_NAME) + "] " + s + "\n";
+    // escape %'s
+    string cleaned_s = "";
+    vector<string> parts = explode(s, "%");
+    for(unsigned int i=0; i<parts.size()-1; i++)
+      cleaned_s += parts[i] + "%%";
+    cleaned_s += parts[parts.size()-1];
+    // stderr is redirected by apache to apache's error log
+    fputs(cleaned_s.c_str(), stderr);
+    fflush(stderr);
+#endif
+  };
+
+  // get a descriptive string for an error; a short string is used as a GET param
+  // value in the style of OpenID get params - short, no space, ...
+  string error_to_string(error_result_t e, bool use_short_string) {
+    string short_string, long_string;
+    switch(e) {
+    case no_idp_found:
+      short_string = "no_idp_found";
+      long_string = "There was either no identity provider found for the identity given"
+	" or there was trouble connecting to it.";
+      break;
+    case invalid_id:
+      short_string = "invalid_id";
+      long_string = "The identity given is not a valid identity.";
+      break;
+    case idp_not_trusted:
+      short_string = "idp_not_trusted";
+      long_string = "The identity provider for the identity given is not trusted.";
+      break;
+    case invalid_nonce:
+      short_string = "invalid_nonce";
+      long_string = "Invalid nonce; error while authenticating.";
+      break;
+    case canceled:
+      short_string = "canceled";
+      long_string = "Identification process has been canceled.";
+      break;
+    case unauthorized:
+      short_string = "unauthorized";
+      long_string = "User is not authorized to access this location.";
+      break;
+	case no_storage:
+		short_string = "No storage";
+		long_string = "There was no either Memcached or SQL DB.";
+		break;
+	case invalid_config:
+		short_string = "Invalid Configs";
+		long_string = "Make the correct configs in httpd.conf.";
+		break;
+    default: // unspecified
+      short_string = "unspecified";
+      long_string = "There has been an error while attempting to authenticate.";
+      break;
+    }
+    return (use_short_string) ? short_string : long_string;
+  };
+
+  string str_replace(string needle, string replacement, string haystack) {
+    vector<string> v = explode(haystack, needle);
+    string r = "";
+    for(vector<string>::size_type i=0; i < v.size()-1; i++)
+      r += v[i] + replacement;
+    r += v[v.size()-1];
+    return r;
+  };
+
+  vector<string> explode(string s, string e) {
+    vector<string> ret;
+    string::size_type iPos = s.find(e, 0);
+    string::size_type iPit = e.length();
+    while((int)iPos>-1) {
+      if(iPos!=0)
+        ret.push_back(s.substr(0,iPos));
+      s.erase(0,iPos+iPit);
+      iPos = s.find(e, 0);
+    }
+    if(s!="")
+      ret.push_back(s);
+    return ret;
+  };
+
+  void strip(string& s) {
+    while(!s.empty() && s.substr(0,1) == " ") s.erase(0,1);
+    while(!s.empty() && s.substr(s.size()-1, 1) == " ") s.erase(s.size()-1,1);
+  };
+
+  // make a random alpha-numeric string size characters long
+  void make_rstring(int size, string& s) {
+    s = "";
+    const char *cs = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    for(int index=0; index<size; index++)
+      s += cs[true_random()%62];
+  }
+/*
+  void print_sqlite_table(sqlite3 *db, string tablename) {
+    fprintf(stdout, "Printing table: %s.  ", tablename.c_str());
+    string sql = "SELECT * FROM " + tablename;
+    int rc, nr, nc, size;
+    char **table;
+    rc = sqlite3_get_table(db, sql.c_str(), &table, &nr, &nc, 0);
+    fprintf(stdout, "There are %d rows.\n", nr);    
+    size = (nr * nc) + nc;
+    for(int i=0; i<size; i++) {
+      fprintf(stdout, "%s\t", table[i]);
+      if(((i+1) % nc) == 0) 
+	fprintf(stdout, "\n");
+    }
+    fprintf(stdout, "\n");
+    sqlite3_free_table(table);
+  };
+
+  bool test_sqlite_return(sqlite3 *db, int result, const string& context) {
+    if(result != SQLITE_OK){
+      string msg = "SQLite Error - " + context + ": %s\n";
+      fprintf(stderr, msg.c_str(), sqlite3_errmsg(db));
+      return false;
+    }
+    return true;
+  };
+*/
+  string exec_error_to_string(exec_result_t e, string exec_location, string id) {
+    string error;
+    switch(e) {
+    case fork_failed:
+      error = "Could not fork to exec program: " + exec_location + "when attempting to auth " + id;
+      break;
+    case child_no_return:
+      error = "Problem waiting for child " + exec_location + " to return when authenticating " + id;
+      break;
+    case id_refused:
+      error = id + " not authenticated by " + exec_location;
+      break;
+    default: // unspecified
+      error = "Error while attempting to authenticate " + id + " using the program " + exec_location;
+      break;
+    }
+    return error;
+  }
+/*
+  exec_result_t exec_auth(string exec_location, string username) {
+    if(exec_location.size() > 255)
+      exec_location.resize(255);
+    if(username.size() > 255)
+      username.resize(255);
+
+    char *const argv[] = { (char *) exec_location.c_str(), (char *) username.c_str(), NULL };
+    exec_result_t result = id_refused;
+    int rvalue = 0;
+    
+    pid_t pid = fork();
+    switch(pid) {
+    case -1:
+      // Fork failed
+      result = fork_failed;
+      break;
+    case 0:
+      // congrats, you're a kid
+      execv(exec_location.c_str(), argv);
+      // if we make it here, exec failed, exit from kid with rvalue 1
+      exit(1);
+    default:
+      // you're an adult parent, act responsibly
+      if(waitpid(pid, &rvalue, 0) == -1) 
+	result = child_no_return;
+      else
+	result = (rvalue == 0) ? id_accepted : id_refused;
+      break;
+    }
+    return result;
+  };
+*/
+  /* true_random -- generate a crypto-quality random number. Taken from apr-util's getuuid.c file */
+  int true_random() {
+#if APR_HAS_RANDOM
+    unsigned char buf[2];
+    if (apr_generate_random_bytes(buf, 2) == APR_SUCCESS)
+      return (buf[0] << 8) | buf[1];
+#endif
+    apr_uint64_t time_now = apr_time_now();
+    srand((unsigned int)(((time_now >> 32) ^ time_now) & 0xffffffff));
+    return rand() & 0x0FFFF;
+  };
+
+} // end namespace
+

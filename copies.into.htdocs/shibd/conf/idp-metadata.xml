@@ -1,0 +1,116 @@
+<EntityDescriptor entityID="https://idp.gluu.org/idp/shibboleth"
+                  xmlns="urn:oasis:names:tc:SAML:2.0:metadata"
+                  xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
+                  xmlns:shibmd="urn:mace:shibboleth:metadata:1.0"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+    <IDPSSODescriptor errorURL="https://idp.gluu.org/identity/feedback.htm" protocolSupportEnumeration="urn:mace:shibboleth:1.0 urn:oasis:names:tc:SAML:1.1:protocol urn:oasis:names:tc:SAML:2.0:protocol">
+
+        <Extensions>
+            <shibmd:Scope regexp="false">idp.gluu.org</shibmd:Scope>
+        </Extensions>
+
+        <KeyDescriptor>
+            <ds:KeyInfo>
+                <ds:X509Data>
+                    <ds:X509Certificate>
+
+MIIDJjCCAg4CCQDtMyWGeNjNPzANBgkqhkiG9w0BAQUFADBVMRUwEwYDVQQDEwxp
+ZHAuZ2x1dS5vcmcxETAPBgNVBAoTCEdsdXUgTGFiMQswCQYDVQQGEwJVUzELMAkG
+A1UECBMCVFgxDzANBgNVBAcTBkF1c3RpbjAeFw0xMzA1MzExOTQxMTVaFw0xNDA1
+MzExOTQxMTVaMFUxFTATBgNVBAMTDGlkcC5nbHV1Lm9yZzERMA8GA1UEChMIR2x1
+dSBMYWIxCzAJBgNVBAYTAlVTMQswCQYDVQQIEwJUWDEPMA0GA1UEBxMGQXVzdGlu
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAv6b3QGA44h8Nqvo+fDTs
+n8WHhhkHQ5oErylEs+4ygZluuWTsrFDlorMyVHVo0e7xnVYSSuRakylNpT0xBxj5
+OjuxMEjLW2q0t8NiL/B5GI/Rw7n73AgoggYbbLBgCb6oPi21AvOuQJa5rUq3nlbc
+q2fUrBMcrukuR97Y1K2YjnER1hkpHZU9GUXjmD9/m1Ep2KEtkJ0u/L6kKU2BTJSO
+43pb/HD6+Hdt1vfwTl3zAScDK+2WQLKkIlM9Zx7EitRaO9CbI8lTbSu4wzX0hMUR
+kx93pYijKTxJN1N/EWJksI37wIiXCKFR0fMgv2oaJAYyS2nN7z1QhOrhcgjfXNBK
+3wIDAQABMA0GCSqGSIb3DQEBBQUAA4IBAQCGJYrsIGXyaIaGwZAp1j0XzFIo8VlS
+yGbxGQPV9LSXwDpTPPoqfBiWlkHGYY0AAo7PWLVaJx9rFItpO/FBQt9xBwlnwQ+F
+bVEXayBE6zrutevB1M6ztgH74qrEhJu6jWmI0kEQAGCFSfaZjs2jySU/igILzQsb
+wvzUnuMdytufNM0obMxbRSorZ/dIDE1bkF8u1s4YP+4F9TmObbZbdsFoARoeP6Ip
+VG6dyp4j8M1JrmT+mUO+nqOH/YUSHVuRNEb7yCYZtIGU8Gf6qpZwJRlwXDS2kqGU
+9P1dbXVFCVVrrfNXbrFYZrYqAQ0afM95k6eq7Km/LBcI1Bx3Y6aviYUJ
+
+
+                    </ds:X509Certificate>
+                </ds:X509Data>
+            </ds:KeyInfo>
+        </KeyDescriptor>
+        
+        <ArtifactResolutionService Binding="urn:oasis:names:tc:SAML:1.0:bindings:SOAP-binding"
+                                   Location="https://idp.gluu.org:9443/idp/profile/SAML1/SOAP/ArtifactResolution" 
+                                   index="1"/>
+
+        <ArtifactResolutionService Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"
+                                   Location="https://idp.gluu.org:9443/idp/profile/SAML2/SOAP/ArtifactResolution" 
+                                   index="2"/>
+                                   
+        <NameIDFormat>urn:mace:shibboleth:1.0:nameIdentifier</NameIDFormat>
+        <NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:transient</NameIDFormat>
+        <NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:persistent</NameIDFormat>
+        <SingleSignOnService Binding="urn:mace:shibboleth:1.0:profiles:AuthnRequest" 
+                             Location="https://idp.gluu.org/idp/profile/Shibboleth/SSO" />
+        
+        <SingleSignOnService Binding="urn:mace:shibboleth:2.0:profiles:AuthnRequest" 
+                             Location="https://idp.gluu.org/idp/profile/SAML2/Unsolicited/SSO" />
+
+        <SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" 
+                             Location="https://idp.gluu.org/idp/profile/SAML2/POST/SSO" />
+
+        <SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST-SimpleSign" 
+                             Location="https://idp.gluu.org/idp/profile/SAML2/POST-SimpleSign/SSO" />
+        
+        <SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" 
+                             Location="https://idp.gluu.org/idp/profile/SAML2/Redirect/SSO" />
+    </IDPSSODescriptor>
+
+    <AttributeAuthorityDescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:1.1:protocol urn:oasis:names:tc:SAML:2.0:protocol">
+
+        <Extensions>
+            <shibmd:Scope regexp="false">idp.gluu.org</shibmd:Scope>
+        </Extensions>
+
+        <KeyDescriptor>
+            <ds:KeyInfo>
+                <ds:X509Data>
+                    <ds:X509Certificate>
+
+MIIDJjCCAg4CCQDtMyWGeNjNPzANBgkqhkiG9w0BAQUFADBVMRUwEwYDVQQDEwxp
+ZHAuZ2x1dS5vcmcxETAPBgNVBAoTCEdsdXUgTGFiMQswCQYDVQQGEwJVUzELMAkG
+A1UECBMCVFgxDzANBgNVBAcTBkF1c3RpbjAeFw0xMzA1MzExOTQxMTVaFw0xNDA1
+MzExOTQxMTVaMFUxFTATBgNVBAMTDGlkcC5nbHV1Lm9yZzERMA8GA1UEChMIR2x1
+dSBMYWIxCzAJBgNVBAYTAlVTMQswCQYDVQQIEwJUWDEPMA0GA1UEBxMGQXVzdGlu
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAv6b3QGA44h8Nqvo+fDTs
+n8WHhhkHQ5oErylEs+4ygZluuWTsrFDlorMyVHVo0e7xnVYSSuRakylNpT0xBxj5
+OjuxMEjLW2q0t8NiL/B5GI/Rw7n73AgoggYbbLBgCb6oPi21AvOuQJa5rUq3nlbc
+q2fUrBMcrukuR97Y1K2YjnER1hkpHZU9GUXjmD9/m1Ep2KEtkJ0u/L6kKU2BTJSO
+43pb/HD6+Hdt1vfwTl3zAScDK+2WQLKkIlM9Zx7EitRaO9CbI8lTbSu4wzX0hMUR
+kx93pYijKTxJN1N/EWJksI37wIiXCKFR0fMgv2oaJAYyS2nN7z1QhOrhcgjfXNBK
+3wIDAQABMA0GCSqGSIb3DQEBBQUAA4IBAQCGJYrsIGXyaIaGwZAp1j0XzFIo8VlS
+yGbxGQPV9LSXwDpTPPoqfBiWlkHGYY0AAo7PWLVaJx9rFItpO/FBQt9xBwlnwQ+F
+bVEXayBE6zrutevB1M6ztgH74qrEhJu6jWmI0kEQAGCFSfaZjs2jySU/igILzQsb
+wvzUnuMdytufNM0obMxbRSorZ/dIDE1bkF8u1s4YP+4F9TmObbZbdsFoARoeP6Ip
+VG6dyp4j8M1JrmT+mUO+nqOH/YUSHVuRNEb7yCYZtIGU8Gf6qpZwJRlwXDS2kqGU
+9P1dbXVFCVVrrfNXbrFYZrYqAQ0afM95k6eq7Km/LBcI1Bx3Y6aviYUJ
+
+
+                    </ds:X509Certificate>
+                </ds:X509Data>
+            </ds:KeyInfo>
+        </KeyDescriptor>
+
+        <AttributeService Binding="urn:oasis:names:tc:SAML:1.0:bindings:SOAP-binding" 
+                          Location="https://idp.gluu.org:9443/idp/profile/SAML1/SOAP/AttributeQuery"/>
+        
+        <AttributeService Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"
+                          Location="https://idp.gluu.org:9443/idp/profile/SAML2/SOAP/AttributeQuery"/>
+        
+        <NameIDFormat>urn:mace:shibboleth:1.0:nameIdentifier</NameIDFormat>
+        <NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:transient</NameIDFormat>
+		<NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:persistent</NameIDFormat>
+        
+    </AttributeAuthorityDescriptor>
+    
+</EntityDescriptor>    

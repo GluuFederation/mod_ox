@@ -1,5 +1,0 @@
-SUBDIRS = src
-
-EXTRA_DIST = UPGRADE
-
-ACLOCAL_AMFLAGS = -I acinclude.d
