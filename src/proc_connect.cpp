@@ -181,10 +181,9 @@ static int oic_check_session(mod_ox_config *s_cfg, const char *id_token, const c
 */
 int start_connect_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& params) 
 {
-	int ret;
+	int i, ret;
 	bool info_changed = false;
 	const apr_array_header_t    *fields;
-	int                         i;
 	apr_table_entry_t           *e = 0;
 
 	modox::remove_openid_vars(params);
@@ -289,26 +288,27 @@ int start_connect_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t
 	
 	std::string scope;
 	std::vector<std::string> scope_pairs = modox::explode(s_cfg->OpenIDRequestedScopes, ";");
-	for(int i=0; i<scope_pairs.size(); i++)
+	for(i=0; i<scope_pairs.size()-1; i++)
 	{
 		scope += scope_pairs[i];
 		scope += " ";
 	}
+	scope += scope_pairs[i];
 	params["scope"] = scope;
 
 	params["redirect_uri"] = s_cfg->OpenIDClientRedirectURIs;
-
-	std::string requested_acr = "[\"";
-	std::vector<std::string> acr_pairs = modox::explode(s_cfg->OpenIDRequestedScopes, ";");
-	for(int i=0; i<acr_pairs.size(); i++)
+/*
+	std::string requested_acr = "\"";
+	std::vector<std::string> acr_pairs = modox::explode(s_cfg->OpenIDRequestedACR, ";");
+	for(i=0; i<acr_pairs.size()-1; i++)
 	{
 		requested_acr += acr_pairs[i];
-		requested_acr += ",";
+		requested_acr += "\",\"";
 	}
-	requested_acr += s_cfg->OpenIDRequestedACR;
-	requested_acr += "\"]";
+	requested_acr += acr_pairs[i];
+	requested_acr += "\"";
 	if (s_cfg->OpenIDRequestedACR) params["acr_values"] = requested_acr;
-	
+*/	
 	std::string auth_end = std::string(authorization_endpoint);
 
 	if (issuer) free(issuer);

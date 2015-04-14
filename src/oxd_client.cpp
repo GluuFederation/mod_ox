@@ -153,7 +153,9 @@ int oxd_discovery(const char *hostname, int portnum, const char *discovery_url, 
     
 	strcat(req, "    ");
 	strcat(req, "{\"command\":\"discovery\",\"params\":{\"discovery_url\":\"");
+	strcat(req, "https://");
 	strcat(req, discovery_url);
+	strcat(req, "/.well-known/openid-configuration");
 	strcat(req, "\"}}");
 	sprintf(&req[0], "%04d", strlen(req)-4);
 	req[4] = '{';
@@ -200,7 +202,9 @@ int oxd_register_client(const char *hostname, int portnum, \
 
 	strcat(req, "    ");
 	strcat(&req[4], "{\"command\":\"register_client\",\"params\":{\"discovery_url\":\"");
+	strcat(req, "https://");
 	strcat(req, discovery_url);
+	strcat(req, "/.well-known/openid-configuration");
 	strcat(req, "\",\"redirect_url\":\"");
 	strcat(req, redirect_url);
 	strcat(req, "\",\"logout_redirect_url\":\"");
@@ -251,9 +255,13 @@ int oxd_obtain_pat(const char *hostname, int portnum, \
 
 	strcat(req, "    ");
 	strcat(&req[4], "{\"command\":\"obtain_pat\",\"params\":{\"discovery_url\":\"");
+	strcat(req, "https://");
 	strcat(req, discovery_url);
+	strcat(req, "/.well-known/openid-configuration");
 	strcat(req, "\",\"uma_discovery_url\":\"");
+	strcat(req, "https://");
 	strcat(req, uma_discovery_url);
+	strcat(req, "/.well-known/uma-configuration");
 	strcat(req, "\",\"redirect_url\":\"");
 	strcat(req, redirect_url);
 	strcat(req, "\",\"client_id\":\"");
@@ -283,16 +291,14 @@ error:
 }
 
 int oxd_register_resource(const char *hostname, int portnum, const char *uma_discovery_url, const char *pat_token, \
-				   const char *resource_name, \
-				   const int scope_num,  const char *scopes[], \
-				   char *resp_str)
+				   const char *resource_name, const char *scopes, char *resp_str)
 {
 	apr_status_t rv;
 	apr_pool_t *mp;
 	apr_socket_t *s;
 	char req[BUFSIZE]="";
 
-	if (!uma_discovery_url || !pat_token || !resource_name || (scope_num < 0) || !hostname || (portnum < 0)) {
+	if (!uma_discovery_url || !pat_token || !resource_name || !hostname || !scopes || (portnum < 0)) {
 			return -1;
 	}
 
@@ -306,22 +312,16 @@ int oxd_register_resource(const char *hostname, int portnum, const char *uma_dis
 
 	strcat(req, "    ");
 	strcat(&req[4], "{\"command\":\"register_resource\",\"params\":{\"uma_discovery_url\":\"");
+	strcat(req, "https://");
 	strcat(req, uma_discovery_url);
+	strcat(req, "/.well-known/uma-configuration");
 	strcat(req, "\",\"pat\":\"");
 	strcat(req, pat_token);
 	strcat(req, "\",\"name\":\"");
 	strcat(req, resource_name);
 	strcat(req, "\",\"scopes\":[");
-	int i;
-	for (i=0; i<(scope_num-1); i++)
-	{
-		strcat(req, "\"");
-		strcat(req, scopes[i]);
-		strcat(req, "\",");
-	}
-	strcat(req, "\"");
-	strcat(req, scopes[i]);
-	strcat(req, "\"]");
+	strcat(req, scopes);
+	strcat(req, "]");
 	strcat(req, "}}");
 	sprintf(&req[0], "%04d", strlen(req)-4);
 	req[4] = '{';
@@ -366,9 +366,13 @@ int oxd_obtain_aat(const char *hostname, int portnum, \
 
 	strcat(req, "    ");
 	strcat(&req[4], "{\"command\":\"obtain_aat\",\"params\":{\"discovery_url\":\"");
+	strcat(req, "https://");
 	strcat(req, discovery_url);
+	strcat(req, "/.well-known/openid-configuration");
 	strcat(req, "\",\"uma_discovery_url\":\"");
+	strcat(req, "https://");
 	strcat(req, uma_discovery_url);
+	strcat(req, "/.well-known/uma-configuration");
 	strcat(req, "\",\"redirect_url\":\"");
 	strcat(req, redirect_url);
 	strcat(req, "\",\"client_id\":\"");
@@ -460,7 +464,9 @@ int oxd_check_rpt_status(const char *hostname, int portnum, const char *uma_disc
 
 	strcat(req, "    ");
 	strcat(&req[4], "{\"command\":\"rpt_status\",\"params\":{\"uma_discovery_url\":\"");
+	strcat(req, "https://");
 	strcat(req, uma_discovery_url);
+	strcat(req, "/.well-known/uma-configuration");
 	strcat(req, "\",\"pat\":\"");
 	strcat(req, pat_token);
 	strcat(req, "\",\"rpt\":\"");
@@ -485,15 +491,14 @@ error:
 
 int oxd_register_ticket(const char *hostname, int portnum, const char *uma_discovery_url, \
 						const char *pat_token, const char *am_host, const char *rs_host, \
-						const int scope_num,  const char *scopes[], \
-						const char *resource_set_id, char *resp_str)
+						const char *scopes, const char *resource_set_id, char *resp_str)
 {
 	apr_status_t rv;
 	apr_pool_t *mp;
 	apr_socket_t *s;
 	char req[BUFSIZE]="";
 
-	if (!uma_discovery_url || !pat_token || !am_host || !rs_host || !resource_set_id || !hostname || (portnum < 0)) {
+	if (!uma_discovery_url || !pat_token || !am_host || !rs_host || !resource_set_id || !hostname  || !scopes || (portnum < 0)) {
 		return -1;
 	}
 
@@ -507,7 +512,9 @@ int oxd_register_ticket(const char *hostname, int portnum, const char *uma_disco
 
 	strcat(req, "    ");
 	strcat(&req[4], "{\"command\":\"register_ticket\",\"params\":{\"uma_discovery_url\":\"");
+	strcat(req, "https://");
 	strcat(req, uma_discovery_url);
+	strcat(req, "/.well-known/uma-configuration");
 	strcat(req, "\",\"pat\":\"");
 	strcat(req, pat_token);
 	strcat(req, "\",\"am_host\":\"");
@@ -518,16 +525,8 @@ int oxd_register_ticket(const char *hostname, int portnum, const char *uma_disco
 	strcat(req, resource_set_id);
 
 	strcat(req, "\",\"scopes\":[");
-	int i;
-	for (i=0; i<(scope_num-1); i++)
-	{
-		strcat(req, "\"");
-		strcat(req, scopes[i]);
-		strcat(req, "\",");
-	}
-	strcat(req, "\"");
-	strcat(req, scopes[i]);
-	strcat(req, "\"]");
+	strcat(req, scopes);
+	strcat(req, "]");
 
 	strcat(req, "}}");
 	sprintf(&req[0], "%04d", strlen(req)-4);
@@ -629,7 +628,9 @@ int oxd_check_id_token(const char *hostname, int portnum, const char *discovery_
 
 	strcat(req, "    ");
 	strcat(&req[4], "{\"command\":\"id_token_status\",\"params\":{\"discovery_url\":\"");
+	strcat(req, "https://");
 	strcat(req, discovery_url);
+	strcat(req, "/.well-known/openid-configuration");
 	strcat(req, "\",\"id_token\":\"");
 	strcat(req, id_token);
 	strcat(req, "\"}}");

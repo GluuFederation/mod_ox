@@ -88,9 +88,7 @@ static void *create_mod_ox_config(apr_pool_t *p, char *s) {
 	// Etc
 	newcfg->admin_url = NULL;
 	newcfg->uma_rs_host = NULL;
-	memset((void *)&(newcfg->uma_am_host[0]), 0, sizeof(uma_am_host_config));
-	memset((void *)&(newcfg->uma_am_host[1]), 0, sizeof(uma_am_host_config));
-	memset((void *)&(newcfg->uma_am_host[2]), 0, sizeof(uma_am_host_config));
+	newcfg->uma_am_host = NULL;
 	newcfg->uma_sent_user_claims = "givenName+issuingIDP+mail+uid";
 	newcfg->cookie_name = "ox_session_id";
 	newcfg->cookie_lifespan = 0;
@@ -254,26 +252,8 @@ static const char *set_mod_ox_uma_rs_host(cmd_parms *parms, void *mconfig, const
 	return NULL; 
 }
 static const char *set_mod_ox_uma_am_host(cmd_parms *parms, void *mconfig, const char *arg, const char *exp) { 
-	char *token[5];
-	int i=0, j=0;
 	mod_ox_config *s_cfg = (mod_ox_config *) mconfig; 
-	if (s_cfg->uma_am_host[0].host == NULL)
-		i = 0;
-	else if (s_cfg->uma_am_host[1].host == NULL)
-		i = 1;
-	else if (s_cfg->uma_am_host[2].host == NULL)
-		i = 2;
-	else
-		return NULL;
-
-	s_cfg->uma_am_host[i].host = (char *) arg;
-	token[j] = strtok((char *)exp, ";");
-	while(token[j]!= NULL) {   
-		s_cfg->uma_am_host[i].scope[j] = token[j];
-		j++; if (j >= 5) break;		
-		token[j] = strtok(NULL, ";");
-	}
-
+	s_cfg->uma_am_host = (char *) arg; 
 	return NULL; 
 }
 static const char *set_mod_ox_uma_attr_name(cmd_parms *parms, void *mconfig, const char *arg) { 
@@ -388,7 +368,7 @@ static int mod_ox_check_auth_type(mod_ox_config *s_cfg)
 
 	if (!strcasecmp(s_cfg->AuthnType, "Connect"))
 		return TRUSTED_RP_CONNECT;
-	else if (!strcasecmp(s_cfg->AuthnType, "UMA"))
+	if (!strcasecmp(s_cfg->AuthnType, "UMA"))
 		return TRUSTED_RP_UMA;
 	else if (!strcasecmp(s_cfg->AuthnType, "SAML"))
 		return TRUSTED_RP_SAML;
@@ -422,7 +402,7 @@ static int mod_ox_check_predefined_url(request_rec *r, mod_ox_config *s_cfg)
 		if (apuri.path != NULL)
 		{
 			if (!strcmp(r->uri, apuri.path))
-				return ADMIN_PREDEFINED;
+				return LOGIN_PREDEFINED;
 		}
 	}
 
@@ -443,7 +423,7 @@ static int mod_ox_check_predefined_url(request_rec *r, mod_ox_config *s_cfg)
 /*
 * check config infos defined in Apache .conf file
 */
-static int mod_ox_check_configs(mod_ox_config *s_cfg, const int auth_type)
+static int mod_ox_check_configs(request_rec *r, mod_ox_config *s_cfg, const int auth_type)
 {
 	// Check general configs
 	if (!s_cfg->AuthnType || !s_cfg->CookiePath || (s_cfg->SendHeaders==SETNONE) || !s_cfg->OpenIDProvider || \
@@ -458,9 +438,13 @@ static int mod_ox_check_configs(mod_ox_config *s_cfg, const int auth_type)
 			return -1;		
 		return 0;
 	case TRUSTED_RP_UMA:
-		if (!s_cfg->UmaAuthorizationServer || !s_cfg->UmaResourceName || !s_cfg->UmaGetScope || \
-			!s_cfg->UmaPutScope || !s_cfg->UmaPostScope || !s_cfg->UmaDeleteScope)
+		if (!s_cfg->UmaAuthorizationServer || !s_cfg->UmaResourceName)
+		{
 			return -1;
+		}
+
+		s_cfg->uma_rs_host = (char *)r->hostname;
+		s_cfg->uma_am_host = s_cfg->UmaAuthorizationServer;
 		return 0;
 	case TRUSTED_RP_SAML:
 		if (!s_cfg->SAMLRedirectUrl)
@@ -573,7 +557,7 @@ static int has_valid_session(request_rec *r, mod_ox_config *s_cfg, opkele::param
 	case TRUSTED_RP_CONNECT:
 		return has_connect_session(r, s_cfg, params, logout);
 	case TRUSTED_RP_UMA:
-		return has_uma_session(r, s_cfg, params);
+		return has_uma_session(r, s_cfg, params, logout);
 	case TRUSTED_RP_SAML:
 		return has_saml_session(r, s_cfg, params);
 	}
@@ -613,7 +597,7 @@ static int mod_ox_method_handler(request_rec *r) {
 		return show_error(r, s_cfg, "Invalid OX parameters, Please check AuthnType and AuthzType in Apache");
 
 	// 3. check config infos in Apache conf file
-	if (mod_ox_check_configs(s_cfg, auth_type) != 0)
+	if (mod_ox_check_configs(r, s_cfg, auth_type) != 0)
 		return show_error(r, s_cfg, "Invalid OX parameters, Please check ox.conf in Apache");
 
 	// 4. init memcached storage

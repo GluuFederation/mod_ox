@@ -59,54 +59,25 @@ int ox_discovery(mod_ox_config *s_cfg)
 	responseLen = atoi(tmp);
 	if (libjson_init(&responseStr[4], responseLen) == RET_SUCCESS)
 	{
-		if (libjson_getKeyValue("issuer", keyValue, BUF_SIZE) == RET_SUCCESS)
+		if (libjson_getKeyValue("status", keyValue, BUF_SIZE) == RET_SUCCESS)
+		{
+			if (strcmp(keyValue, "ok"))
+				goto OX_DISCOVERY_FAILED;
+		}
+
+		if (libjson_getKeyValue("data.issuer", keyValue, BUF_SIZE) == RET_SUCCESS)
 		{
 			Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.issuer", keyValue, 0);
 		}
 
-		if (libjson_getKeyValue("dynamic_client_endpoint", keyValue, BUF_SIZE) == RET_SUCCESS)
+		if (libjson_getKeyValue("data.authorization_endpoint", keyValue, BUF_SIZE) == RET_SUCCESS)
 		{
-			Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.dynamic_client_endpoint", keyValue, 0);
+			Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.authorization_endpoint", keyValue, 0);
 		}
 
-		if (libjson_getKeyValue("token_endpoint", keyValue, BUF_SIZE) == RET_SUCCESS)
+		if (libjson_getKeyValue("data.token_endpoint", keyValue, BUF_SIZE) == RET_SUCCESS)
 		{
 			Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.token_endpoint", keyValue, 0);
-		}
-
-		if (libjson_getKeyValue("user_endpoint", keyValue, BUF_SIZE) == RET_SUCCESS)
-		{
-			Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.user_endpoint", keyValue, 0);
-		}
-
-		if (libjson_getKeyValue("introspection_endpoint", keyValue, BUF_SIZE) == RET_SUCCESS)
-		{
-			Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.introspection_endpoint", keyValue, 0);
-		}
-
-		if (libjson_getKeyValue("resource_set_registration_endpoint", keyValue, BUF_SIZE) == RET_SUCCESS)
-		{
-			Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.resource_set_registration_endpoint", keyValue, 0);
-		}
-
-		if (libjson_getKeyValue("permission_registration_endpoint", keyValue, BUF_SIZE) == RET_SUCCESS)
-		{
-			Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.permission_registration_endpoint", keyValue, 0);
-		}
-
-		if (libjson_getKeyValue("rpt_endpoint", keyValue, BUF_SIZE) == RET_SUCCESS)
-		{
-			Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.rpt_endpoint", keyValue, 0);
-		}
-
-		if (libjson_getKeyValue("authorization_request_endpoint", keyValue, BUF_SIZE) == RET_SUCCESS)
-		{
-			Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.authorization_request_endpoint", keyValue, 0);
-		}
-
-		if (libjson_getKeyValue("scope_endpoint", keyValue, BUF_SIZE) == RET_SUCCESS)
-		{
-			Set_Ox_Storage(s_cfg->OpenIDClientName, "oxd.scope_endpoint", keyValue, 0);
 		}
 	}
 	else
@@ -353,8 +324,8 @@ int ox_obtain_pat(mod_ox_config *s_cfg)
 
 	char *client_id = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.client_id");
 	char *client_secret = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.client_secret");
-	char *user_id = "";
-	char *user_secret = "";
+	char *user_id = "";//"admin";
+	char *user_secret = "";//"rootroot";
 
 	ret = oxd_obtain_pat(s_cfg->OxdHostAddr, s_cfg->OxdPortNum, \
 		s_cfg->OpenIDProvider, s_cfg->UmaAuthorizationServer, s_cfg->OpenIDClientRedirectURIs, \
@@ -391,6 +362,17 @@ int ox_obtain_pat(mod_ox_config *s_cfg)
 			Set_Ox_Storage(s_cfg->OpenIDClientName, "uma.pat_token", keyValue, timeout);
 		else
 			return -1;
+/*
+		if (libjson_getKeyValue("data.pat_refresh_token", keyValue, BUF_SIZE) == RET_SUCCESS)
+			Set_Ox_Storage(s_cfg->OpenIDClientName, "uma.pat_refresh_token", keyValue, timeout);
+		else
+			return -1;
+
+		if (libjson_getKeyValue("data.authorization_code", keyValue, BUF_SIZE) == RET_SUCCESS)
+			Set_Ox_Storage(s_cfg->OpenIDClientName, "uma.authorization_code", keyValue, timeout);
+		else
+			return -1;
+*/
 	}
 	else
 	{
@@ -416,26 +398,24 @@ int ox_register_resources(mod_ox_config *s_cfg)
 
 	char *pat_token = Get_Ox_Storage(s_cfg->OpenIDClientName, "uma.pat_token");
 
-	if ((s_cfg->uma_am_host[0].host == NULL) || (s_cfg->uma_am_host[0].scope[0] == NULL))
+	if (s_cfg->uma_am_host == NULL)
 		return -1;
 
-	for (i=0; i<5; i++)
+	std::string res_scope;
+	std::vector<std::string> scope_pairs = modox::explode(s_cfg->UmaGetScope, ";");
+	for(i=0; i<scope_pairs.size()-1; i++)
 	{
-		if (s_cfg->uma_am_host[0].scope[i] == NULL)
-			break;
+		res_scope += "\"";
+		res_scope += scope_pairs[i];
+		res_scope += "\"";
+		res_scope += ",";
 	}
-	if (i == 0) return -1;
-
-	const char *res_scope[] = {
-		s_cfg->uma_am_host[0].scope[0], 
-		s_cfg->uma_am_host[0].scope[1], 
-		s_cfg->uma_am_host[0].scope[2], 
-		s_cfg->uma_am_host[0].scope[3], 
-		s_cfg->uma_am_host[0].scope[4]
-	};
+	res_scope += "\"";
+	res_scope += scope_pairs[i];
+	res_scope += "\"";
 
 	ret = oxd_register_resource(s_cfg->OxdHostAddr, s_cfg->OxdPortNum, \
-		s_cfg->UmaAuthorizationServer, pat_token, s_cfg->UmaResourceName, i, res_scope, responseStr);
+		s_cfg->UmaAuthorizationServer, pat_token, s_cfg->UmaResourceName, res_scope.c_str(), responseStr);
 
 	if (pat_token) free(pat_token);
 
@@ -461,17 +441,6 @@ int ox_register_resources(mod_ox_config *s_cfg)
 			std::string id = std::string(s_cfg->UmaResourceName);
 			id += "_id";
 			Set_Ox_Storage(s_cfg->OpenIDClientName, id.c_str(), keyValue, 0);
-		}
-		else
-		{
-			return -1;
-		}
-
-		if (libjson_getKeyValue("data._rev", keyValue, BUF_SIZE) == RET_SUCCESS)
-		{
-			std::string rev = std::string(s_cfg->UmaResourceName);
-			rev += "_rev";
-			Set_Ox_Storage(s_cfg->OpenIDClientName, rev.c_str(), keyValue, 0);
 		}
 		else
 		{
@@ -564,10 +533,10 @@ int ox_obtain_rpt(mod_ox_config *s_cfg)
 
 	char *aat_token = Get_Ox_Storage(s_cfg->OpenIDClientName, "uma.aat_token");
 
-	if ((s_cfg->uma_am_host[0].host == NULL) || (s_cfg->uma_am_host[0].scope[0] == NULL))
+	if (s_cfg->uma_am_host == NULL)
 		return -1;
 
-	ret = oxd_obtain_rpt(s_cfg->OxdHostAddr, s_cfg->OxdPortNum, aat_token, s_cfg->uma_am_host[0].host, responseStr);
+	ret = oxd_obtain_rpt(s_cfg->OxdHostAddr, s_cfg->OxdPortNum, aat_token, s_cfg->uma_am_host, responseStr);
 
 	if (aat_token) free(aat_token);
 
@@ -613,33 +582,31 @@ int ox_register_ticket(mod_ox_config *s_cfg)
 	int ret;
 	int responseLen;
 	char tmp[5];
-	int i;
+	int i = 1;
 
 	char *pat_token = Get_Ox_Storage(s_cfg->OpenIDClientName, "uma.pat_token");
 	std::string id = std::string(s_cfg->UmaResourceName);
 	id += "_id";
 	char *resource_set_id = Get_Ox_Storage(s_cfg->OpenIDClientName, id.c_str());
 
-	if ((s_cfg->uma_am_host[0].host == NULL) || (s_cfg->uma_am_host[0].scope[0] == NULL))
+	if (s_cfg->uma_am_host == NULL)
 		return -1;
 
-	for (i=0; i<5; i++)
+	std::string res_scope;
+	std::vector<std::string> scope_pairs = modox::explode(s_cfg->UmaGetScope, ";");
+	for(i=0; i<scope_pairs.size()-1; i++)
 	{
-		if (s_cfg->uma_am_host[0].scope[i] == NULL)
-			break;
+		res_scope += "\"";
+		res_scope += scope_pairs[i];
+		res_scope += "\"";
+		res_scope += ",";
 	}
-	if (i == 0) return -1;
-
-	const char *res_scope[] = {
-		s_cfg->uma_am_host[0].scope[0], 
-		s_cfg->uma_am_host[0].scope[1], 
-		s_cfg->uma_am_host[0].scope[2], 
-		s_cfg->uma_am_host[0].scope[3], 
-		s_cfg->uma_am_host[0].scope[4]
-	};
+	res_scope += "\"";
+	res_scope += scope_pairs[i];
+	res_scope += "\"";
 
 	ret = oxd_register_ticket(s_cfg->OxdHostAddr, s_cfg->OxdPortNum, s_cfg->UmaAuthorizationServer, pat_token, \
-		s_cfg->uma_am_host[0].host, s_cfg->uma_rs_host, i, res_scope, resource_set_id, responseStr);
+		s_cfg->uma_am_host, s_cfg->uma_rs_host, res_scope.c_str(), resource_set_id, responseStr);
 
 	if (pat_token) free(pat_token);
 	if (resource_set_id) free(resource_set_id);
@@ -752,7 +719,7 @@ int ox_authorize_rpt(mod_ox_config *s_cfg, const char *session_id)
 		return -1;
 
 	ret = oxd_authorize_rpt_token(s_cfg->OxdHostAddr, s_cfg->OxdPortNum, aat_token, \
-		rpt_token, s_cfg->uma_am_host[0].host, ticket, claim_list.c_str(), responseStr);
+		rpt_token, s_cfg->uma_am_host, ticket, claim_list.c_str(), responseStr);
 
 	if (aat_token) free(aat_token);
 	if (rpt_token) free(rpt_token);

@@ -29,7 +29,7 @@
 #define __PROC_UMA_H_
 
 int start_uma_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& params);
-int has_uma_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& params);
+int has_uma_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& params, int logout);
 int validate_uma_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& params);
 
 #endif

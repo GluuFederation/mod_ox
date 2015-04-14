@@ -130,12 +130,6 @@ enum {
 	LOGOUT_PREDEFINED
 };
 
-/* config variables */
-typedef struct {
-	char *host;
-	char *scope[5];
-} uma_am_host_config;
-
 typedef struct {
 	char *AuthnType;
 	char *CookiePath;
@@ -178,7 +172,7 @@ typedef struct {
 	// Etc
 	char *admin_url;
 	char *uma_rs_host;
-	uma_am_host_config uma_am_host[3];
+	char *uma_am_host;
 	char *uma_sent_user_claims;
 	const char *cookie_name;
 	int cookie_lifespan;
