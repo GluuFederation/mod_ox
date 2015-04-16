@@ -1,0 +1,23 @@
+Source: libapache2-mod-ox
+Section: httpd
+Priority: optional
+Maintainer: Adrian Alves <adrian@gluu.org>
+Build-Depends: debhelper (>= 8.0.0),
+		 libtool, 
+		automake, 
+		g++, 
+		libcurl4-openssl-dev, 
+		apache2-prefork-dev
+Standards-Version: 3.9.4
+Homepage: http://www.gluu.org
+
+Package: libapache2-mod-ox
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends},
+	memcached
+Description: Apache HTTPD web plugin
+ mod_ox is an access control apache module that 
+ enables an application server to support OpenID
+ Connect and UMA endpoints. mod_ox is written 
+ in C.
+

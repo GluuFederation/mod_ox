@@ -1,0 +1,18 @@
+#!/usr/bin/make -f
+#build:
+#	echo "override_dh_build"
+#	`./autogen.sh --with-apxs`
+#	dh build
+%:
+	dh $@ --with apache2 --with autoreconf
+
+override_dh_autoreconf:
+	dh_autoreconf --with-apxs
+override_dh_auto_configure:
+	./configure --with-apxs
+#configure:
+#	dh_autoreconf --with-apxs
+#	./configure --with-apxs
+#clean:
+#	dh_autoreconf_clean
+#	dh_clean
