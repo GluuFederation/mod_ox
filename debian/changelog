@@ -1,0 +1,5 @@
+libapache2-mod-ox (0.1-1) unstable; urgency=low
+
+  * Initial release (Closes: #0001)
+
+ -- Adrian Alves <adrian@gluu.org>  Wed, 15 Apr 2015 19:46:32 -0400
