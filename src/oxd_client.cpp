@@ -39,35 +39,6 @@
 /* default buffer size */
 #define BUFSIZE			8192
 
-static int urlDecode(char *str)
-{
-    unsigned int i;
-    char tmp[BUFSIZ];
-    char *ptr = tmp;
-    memset(tmp, 0, sizeof(tmp));
-
-    for (i=0; i < strlen(str); i++)
-    {
-        if (str[i] != '%')
-        {
-            *ptr++ = str[i];
-            continue;
-        }
-
-        if (!isdigit(str[i+1]) || !isdigit(str[i+2]))
-        {
-            *ptr++ = str[i];
-            continue;
-        }
-
-        *ptr++ = ((str[i+1] - '0') << 4) | (str[i+2] - '0');
-        i += 2;
-    }
-    *ptr = '\0';
-    strcpy(str, tmp);
-    return 0;
-}
-
 /**
 * Connect to the remote host
 */
@@ -122,7 +93,7 @@ static apr_status_t do_client_task(apr_socket_t *sock, const char *req_str, char
 
 	len = BUFSIZE;
 	while (0) {
-		apr_status_t rv = apr_socket_recv(sock, resp, &len);
+		rv = apr_socket_recv(sock, resp, &len);
 		if (len > 0) {
 			break;
 		}
@@ -157,7 +128,7 @@ int oxd_discovery(const char *hostname, int portnum, const char *discovery_url, 
 	strcat(req, discovery_url);
 	strcat(req, "/.well-known/openid-configuration");
 	strcat(req, "\"}}");
-	sprintf(&req[0], "%04d", strlen(req)-4);
+	sprintf(&req[0], "%04lu", strlen(req)-4);
 	req[4] = '{';
 
     rv = do_client_task(s, req, resp_str);
@@ -212,7 +183,7 @@ int oxd_register_client(const char *hostname, int portnum, \
 	strcat(req, "\",\"client_name\":\"");
 	strcat(req, client_name);
 	strcat(req, "\"}}");
-	sprintf(&req[0], "%04d", strlen(req)-4);
+	sprintf(&req[0], "%04lu", strlen(req)-4);
 	req[4] = '{';
 
 	rv = do_client_task(s, req, resp_str);
@@ -273,7 +244,7 @@ int oxd_obtain_pat(const char *hostname, int portnum, \
 	strcat(req, "\",\"user_secret\":\"");
 	strcat(req, user_secret);
 	strcat(req, "\"}}");
-	sprintf(&req[0], "%04d", strlen(req)-4);
+	sprintf(&req[0], "%04lu", strlen(req)-4);
 	req[4] = '{';
 
 	rv = do_client_task(s, req, resp_str);
@@ -323,7 +294,7 @@ int oxd_register_resource(const char *hostname, int portnum, const char *uma_dis
 	strcat(req, scopes);
 	strcat(req, "]");
 	strcat(req, "}}");
-	sprintf(&req[0], "%04d", strlen(req)-4);
+	sprintf(&req[0], "%04lu", strlen(req)-4);
 	req[4] = '{';
 
 	rv = do_client_task(s, req, resp_str);
@@ -384,7 +355,7 @@ int oxd_obtain_aat(const char *hostname, int portnum, \
 	strcat(req, "\",\"user_secret\":\"");
 	strcat(req, user_secret);
 	strcat(req, "\"}}");
-	sprintf(&req[0], "%04d", strlen(req)-4);
+	sprintf(&req[0], "%04lu", strlen(req)-4);
 	req[4] = '{';
 
 	rv = do_client_task(s, req, resp_str);
@@ -426,7 +397,7 @@ int oxd_obtain_rpt(const char *hostname, int portnum, const char *aat_token, con
 	strcat(req, "\",\"am_host\":\"");
 	strcat(req, am_host);
 	strcat(req, "\"}}");
-	sprintf(&req[0], "%04d", strlen(req)-4);
+	sprintf(&req[0], "%04lu", strlen(req)-4);
 	req[4] = '{';
 
 	rv = do_client_task(s, req, resp_str);
@@ -472,7 +443,7 @@ int oxd_check_rpt_status(const char *hostname, int portnum, const char *uma_disc
 	strcat(req, "\",\"rpt\":\"");
 	strcat(req, rpt_token);
 	strcat(req, "\"}}");
-	sprintf(&req[0], "%04d", strlen(req)-4);
+	sprintf(&req[0], "%04lu", strlen(req)-4);
 	req[4] = '{';
 
 	rv = do_client_task(s, req, resp_str);
@@ -529,7 +500,7 @@ int oxd_register_ticket(const char *hostname, int portnum, const char *uma_disco
 	strcat(req, "]");
 
 	strcat(req, "}}");
-	sprintf(&req[0], "%04d", strlen(req)-4);
+	sprintf(&req[0], "%04lu", strlen(req)-4);
 	req[4] = '{';
 
 	rv = do_client_task(s, req, resp_str);
@@ -587,7 +558,7 @@ int oxd_authorize_rpt_token(const char *hostname, int portnum, const char *aat_t
 		strcat(req, claims);
 	strcat(req, "}");
 	strcat(req, "}}");
-	sprintf(&req[0], "%04d", strlen(req)-4);
+	sprintf(&req[0], "%04lu", strlen(req)-4);
 	req[4] = '{';
 
 	rv = do_client_task(s, req, resp_str);
@@ -634,7 +605,7 @@ int oxd_check_id_token(const char *hostname, int portnum, const char *discovery_
 	strcat(req, "\",\"id_token\":\"");
 	strcat(req, id_token);
 	strcat(req, "\"}}");
-	sprintf(&req[0], "%04d", strlen(req)-4);
+	sprintf(&req[0], "%04lu", strlen(req)-4);
 	req[4] = '{';
 
 	rv = do_client_task(s, req, resp_str);

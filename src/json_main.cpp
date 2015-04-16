@@ -45,7 +45,7 @@
 static JSONValue* jsonRoot = NULL;
 int libjson_init( char* in_str, int in_len )
 {
-	size_t pos;
+//	size_t pos;
 	size_t len;
 	char buf[ BUF_SIZE ];
 
@@ -69,7 +69,8 @@ int libjson_init( char* in_str, int in_len )
 			return RET_FAILURE;
 	}
 
-	pos = jsonRoot->parse( buf, len );
+//	pos = jsonRoot->parse( buf, len );
+	jsonRoot->parse( buf, len );
 	switch( jsonRoot->status )
 	{
 	case JSONValue::COMPLETE:

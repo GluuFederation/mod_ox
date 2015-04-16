@@ -162,7 +162,7 @@ namespace modox {
 		string result = 
 			"<HTML><HEAD><TITLE>Error on OX</TITLE></HEAD>"
 			"<BODY><H1>Protected Location</H1>"
-			"<span style=\"font-size:20px;font-weight:bold\">Error : </span>"
+//			"<span style=\"font-size:20px;font-weight:bold\">Error : </span>"
 			"<span style=\"font-size:18px;font-weight:bold\">"
 			+ (msg.empty()?"":msg) +
 			"</span></br></br>You don't have permission to access <B>"
@@ -183,7 +183,7 @@ namespace modox {
 		char cookie[4096];
 		strcpy(cookie, cookies_c);
 		vector<string> pairs = explode(cookie, ";");
-		for(int i=0; i<pairs.size(); i++)
+		for(unsigned i=0; i<pairs.size(); i++)
 		{
 			if(!strncmp(pairs[i].c_str(), cookie_name.c_str(), strlen(cookie_name.c_str())-1)) {
 				vector<string> pair = explode(pairs[i], "=");
