@@ -1,18 +1,11 @@
 #!/usr/bin/make -f
-#build:
-#	echo "override_dh_build"
-#	`./autogen.sh --with-apxs`
-#	dh build
 %:
-	dh $@ --with apache2 --with autoreconf
+	dh $@ 
 
-override_dh_autoreconf:
-	dh_autoreconf --with-apxs
+#export DEB_BUILD_MAINT_OPTIONS=hardening=-all,-format,+fortify
 override_dh_auto_configure:
-	./configure --with-apxs
-#configure:
-#	dh_autoreconf --with-apxs
-#	./configure --with-apxs
-#clean:
-#	dh_autoreconf_clean
-#	dh_clean
+	./autogen.sh --with-apxs=/usr/bin/apxs
+override_dh_auto_build:
+	make
+#	dh_auto_build:
+	make install
