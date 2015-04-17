@@ -150,7 +150,7 @@ static int set_uma_cookie(request_rec *r, mod_ox_config *s_cfg, opkele::params_t
 	if (params.has_param("state"))
 		state = params.get_param("state");
 	else
-		return show_error(r, s_cfg, "unauthorized");
+		return show_error(r, s_cfg, "error: unauthorized");
 
 	if (params.has_param("expires_in"))
 	{
@@ -176,7 +176,7 @@ static int set_uma_cookie(request_rec *r, mod_ox_config *s_cfg, opkele::params_t
 
 	char *return_uri = Get_Ox_Storage(s_cfg->OpenIDClientName, state.c_str());
 	if (return_uri == NULL)
-		return show_error(r, s_cfg, "Incorrect Return URI");
+		return show_error(r, s_cfg, "error: Incorrect return URI");
 
 	r->args = NULL;
 
@@ -223,14 +223,14 @@ int start_uma_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& pa
 		if (authorization_endpoint) free(authorization_endpoint);
 		if (client_id) free(client_id);
 		if (client_secret) free(client_secret);
-		if (ret < 0) return show_error(r, s_cfg, "Oxd failed to discovery");
+		if (ret < 0) return show_error(r, s_cfg, "oxd: UMA Discovery Failed");
 
 		// Obtain PAT & Register Resource
 		char *pat_token = Get_Ox_Storage(s_cfg->OpenIDClientName, "uma.pat_token");
 		if (pat_token==NULL)
 		{
-			if (ox_obtain_pat(s_cfg) < 0) return show_error(r, s_cfg, "Oxd failed to obtain PAT");
-			if (ox_register_resources(s_cfg) < 0) return show_error(r, s_cfg, "Oxd failed to register Resource");
+			if (ox_obtain_pat(s_cfg) < 0) return show_error(r, s_cfg, "oxd: UMA obtain PAT Failed");
+			if (ox_register_resources(s_cfg) < 0) return show_error(r, s_cfg, "oxd: UMA register Resource Failed");
 		}
 		else
 		{
@@ -246,14 +246,14 @@ int start_uma_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& pa
 
 			if (resource_id) free(resource_id);
 			if (resource_rev) free(resource_rev);
-			if (ret < 0) return show_error(r, s_cfg, "Oxd failed to register Resource");
+			if (ret < 0) return show_error(r, s_cfg, "oxd: UMA register Resource Failed");
 		}
 
 		// Obtain AAT Token
 		char *aat_token = Get_Ox_Storage(s_cfg->OpenIDClientName, "uma.aat_token");
 		if ((aat_token==NULL))
 		{
-			if (ox_obtain_aat(s_cfg) < 0) return show_error(r, s_cfg, "Oxd failed to obtain AAT");
+			if (ox_obtain_aat(s_cfg) < 0) return show_error(r, s_cfg, "oxd: UMA obtain AAT Failed");
 		}
 		else
 			free(aat_token);
@@ -262,7 +262,7 @@ int start_uma_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& pa
 		char *rpt_token = Get_Ox_Storage(s_cfg->OpenIDClientName, "uma.rpt_token");
 		if ((rpt_token==NULL))
 		{
-			if (ox_obtain_rpt(s_cfg) < 0) return show_error(r, s_cfg, "Oxd failed to obtain RPT");
+			if (ox_obtain_rpt(s_cfg) < 0) return show_error(r, s_cfg, "oxd: UMA obtain RPT Failed");
 		}
 		else
 			free(rpt_token);
@@ -271,15 +271,15 @@ int start_uma_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& pa
 	{
 		info_changed = true;
 		// Discovery & Register Client
-		if (ox_discovery(s_cfg) < 0) return show_error(r, s_cfg, "Oxd failed to discovery");
+		if (ox_discovery(s_cfg) < 0) return show_error(r, s_cfg, "oxd: UMA discovery Failed");
 		// Obtain PAT
-		if (ox_obtain_pat(s_cfg) < 0) return show_error(r, s_cfg, "Oxd failed to obtain PAT");
+		if (ox_obtain_pat(s_cfg) < 0) return show_error(r, s_cfg, "oxd: UMA obtain PAT Failed");
 		// Register Resource
-		if (ox_register_resources(s_cfg) < 0) return show_error(r, s_cfg, "Oxd failed to register Resource");
+		if (ox_register_resources(s_cfg) < 0) return show_error(r, s_cfg, "oxd: UMA register Resource Failed");
 		// Obtain AAT
-		if (ox_obtain_aat(s_cfg) < 0) return show_error(r, s_cfg, "Oxd failed to obtain AAT");
+		if (ox_obtain_aat(s_cfg) < 0) return show_error(r, s_cfg, "oxd: UMA obtain AAT Failed");
 		// Obtain RPT
-		if (ox_obtain_rpt(s_cfg) < 0) return show_error(r, s_cfg, "Oxd failed to obtain RPT");
+		if (ox_obtain_rpt(s_cfg) < 0) return show_error(r, s_cfg, "oxd: UMA obtain RPT Failed");
 	}
 
 	char *issuer = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.issuer");
@@ -292,7 +292,7 @@ int start_uma_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& pa
 		if (authorization_endpoint) free(authorization_endpoint);
 		if (client_id) free(client_id);
 
-		return show_error(r, s_cfg, "Oxd failed to discovery");
+		return show_error(r, s_cfg, "oxd: UMA discovery Failed");
 	}
 
 	std::string identity = std::string(issuer);
@@ -425,7 +425,7 @@ int has_uma_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& para
 			std::string valid_path(session.path);
 			// if found session has a valid path
 			if((valid_path==uri_path.substr(0, valid_path.size()) ||
-				(((uri_path.size()+1)==valid_path.size())) && (strncasecmp(uri_path.c_str(), valid_path.c_str(), uri_path.size()) == 0))
+				((((uri_path.size()+1)==valid_path.size())) && (strncasecmp(uri_path.c_str(), valid_path.c_str(), uri_path.size()) == 0)))
 				&& strcasecmp(session.hostname.c_str(), r->hostname)==0) 
 			{
 				const char* idchar = session.identity.c_str();
@@ -530,35 +530,35 @@ int validate_uma_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t&
 	if (params.has_param("id_token"))
 		id_token = params.get_param("id_token");
 	else
-		return show_error(r, s_cfg, "unauthorized");
+		return show_error(r, s_cfg, "error: unauthorized");
 
 	// Get state from params
 	std::string state;
 	if (params.has_param("state"))
 		state = params.get_param("state");
 	else
-		return show_error(r, s_cfg, "unauthorized");
+		return show_error(r, s_cfg, "error: unauthorized");
 
 	// Get scope from params
 	std::string scope;
 	if (params.has_param("scope"))
 		scope = params.get_param("scope");
 	else
-		return show_error(r, s_cfg, "unauthorized");
+		return show_error(r, s_cfg, "error: unauthorized");
 
 	// Get access token from params
 	std::string access_token;
 	if (params.has_param("access_token"))
 		access_token = params.get_param("access_token");
 	else
-		return show_error(r, s_cfg, "unauthorized");
+		return show_error(r, s_cfg, "error: unauthorized");
 
 	// Get expires_in from params
 	std::string expires_in;
 	if (params.has_param("expires_in"))
 		expires_in = params.get_param("expires_in");
 	else
-		return show_error(r, s_cfg, "unauthorized");
+		return show_error(r, s_cfg, "error: unauthorized");
 
 	time_out = (int)atoi(expires_in.c_str());
 
@@ -567,7 +567,7 @@ int validate_uma_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t&
 
 	token_timeout = uma_check_session(s_cfg, id_token.c_str(), session_id.c_str());
 	if (token_timeout <= 0)
-		return show_error(r, s_cfg, "Oxd failed to check session");
+		return show_error(r, s_cfg, "oxd: UMA check session Failed");
 
 	if (ox_obtain_rpt(s_cfg) < 0)
 		return HTTP_FORBIDDEN;

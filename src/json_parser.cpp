@@ -997,7 +997,7 @@ static void print_indention()
 	size_t i;
 
 	for (i = 0; i < s_Level; ++i) {
-		sprintf(&s_Output[strlen(s_Output)], s_pIndention);
+		sprintf(&s_Output[strlen(s_Output)], "%s", s_pIndention);
 	}
 }
 
@@ -1007,11 +1007,11 @@ static int fprint(void* ctx, int type, const JSON_value* value)
 	switch(type) {
 	case JSON_T_ARRAY_BEGIN:    
 		if (!s_IsKey) {
-			sprintf(&s_Output[strlen(s_Output)], "\n");
+			sprintf(&s_Output[strlen(s_Output)], "%s", "\n");
 			print_indention();
 		}
 		s_IsKey = 0;
-		sprintf(&s_Output[strlen(s_Output)], "[");
+		sprintf(&s_Output[strlen(s_Output)], "%s", "[");
 		++s_Level;
 		break;
 	case JSON_T_ARRAY_END:
@@ -1025,7 +1025,7 @@ static int fprint(void* ctx, int type, const JSON_value* value)
 		{
 			if ((s_Output[i] == ',') || (s_Output[i] == '}'))
 			{
-				sprintf(&s_Output[strlen(s_Output)], "\n");
+				sprintf(&s_Output[strlen(s_Output)], "%s", "\n");
 				print_indention();
 				break;
 			}
@@ -1052,31 +1052,31 @@ static int fprint(void* ctx, int type, const JSON_value* value)
 			i--;
 		}
 
-		sprintf(&s_Output[strlen(s_Output)], "],");
+		sprintf(&s_Output[strlen(s_Output)], "%s", "],");
 		break;
 	case JSON_T_OBJECT_BEGIN:
 		if (!s_IsKey && (s_Level > 0)) {
-			sprintf(&s_Output[strlen(s_Output)], "\n");
+			sprintf(&s_Output[strlen(s_Output)], "%s", "\n");
 			print_indention();
 		}
 		s_IsKey = 0;
-		sprintf(&s_Output[strlen(s_Output)], "{");
+		sprintf(&s_Output[strlen(s_Output)], "%s", "{");
 		++s_Level;
 		break;
 	case JSON_T_OBJECT_END:
 		assert(!s_IsKey);
 		if (s_Level > 0) --s_Level;
 		s_Output[strlen(s_Output)-1] = 0;
-		sprintf(&s_Output[strlen(s_Output)], "\n");
+		sprintf(&s_Output[strlen(s_Output)], "%s", "\n");
 		print_indention();
 		if (s_Level > 0)
-			sprintf(&s_Output[strlen(s_Output)], "},");
+			sprintf(&s_Output[strlen(s_Output)], "%s", "},");
 		else
-			sprintf(&s_Output[strlen(s_Output)], "}");
+			sprintf(&s_Output[strlen(s_Output)], "%s", "}");
 		break;
 	case JSON_T_INTEGER:
 		if (!s_IsKey) {
-			sprintf(&s_Output[strlen(s_Output)], "\n");
+			sprintf(&s_Output[strlen(s_Output)], "%s", "\n");
 			print_indention();
 		}
 		s_IsKey = 0;
@@ -1084,7 +1084,7 @@ static int fprint(void* ctx, int type, const JSON_value* value)
 		break;
 	case JSON_T_FLOAT:
 		if (!s_IsKey) {
-			sprintf(&s_Output[strlen(s_Output)], "\n");
+			sprintf(&s_Output[strlen(s_Output)], "%s", "\n");
 			print_indention();
 		}
 		s_IsKey = 0;
@@ -1092,37 +1092,37 @@ static int fprint(void* ctx, int type, const JSON_value* value)
 		break;
 	case JSON_T_NULL:
 		if (!s_IsKey) {
-			sprintf(&s_Output[strlen(s_Output)], "\n");
+			sprintf(&s_Output[strlen(s_Output)], "%s", "\n");
 			print_indention();
 		}
 		s_IsKey = 0;
-		sprintf(&s_Output[strlen(s_Output)], "null,");
+		sprintf(&s_Output[strlen(s_Output)], "%s", "null,");
 		break;
 	case JSON_T_TRUE:
 		if (!s_IsKey) {
-			sprintf(&s_Output[strlen(s_Output)], "\n");
+			sprintf(&s_Output[strlen(s_Output)], "%s", "\n");
 			print_indention();
 		}
 		s_IsKey = 0;
-		sprintf(&s_Output[strlen(s_Output)], "true,");
+		sprintf(&s_Output[strlen(s_Output)], "%s", "true,");
 		break;
 	case JSON_T_FALSE:
 		if (!s_IsKey) {
-			sprintf(&s_Output[strlen(s_Output)], "\n");
+			sprintf(&s_Output[strlen(s_Output)], "%s", "\n");
 			print_indention();
 		}
 		s_IsKey = 0;
-		sprintf(&s_Output[strlen(s_Output)], "false,");
+		sprintf(&s_Output[strlen(s_Output)], "%s", "false,");
 		break;
 	case JSON_T_KEY:
 		s_IsKey = 1;
-		sprintf(&s_Output[strlen(s_Output)], "\n");
+		sprintf(&s_Output[strlen(s_Output)], "%s", "\n");
 		print_indention();
 		sprintf(&s_Output[strlen(s_Output)], "\"%s\": ", value->vu.str.value);
 		break;   
 	case JSON_T_STRING:
 		if (!s_IsKey) {
-			sprintf(&s_Output[strlen(s_Output)], "\n");
+			sprintf(&s_Output[strlen(s_Output)], "%s", "\n");
 			print_indention();
 		}
 		s_IsKey = 0;

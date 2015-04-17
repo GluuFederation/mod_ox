@@ -133,7 +133,7 @@ static int set_connect_cookie(request_rec *r, mod_ox_config *s_cfg, opkele::para
 	if (params.has_param("state"))
 		state = params.get_param("state");
 	else
-		return show_error(r, s_cfg, "unauthorized");
+		return show_error(r, s_cfg, "error: unauthorized");
 
 	if (params.has_param("expires_in"))
 	{
@@ -159,7 +159,7 @@ static int set_connect_cookie(request_rec *r, mod_ox_config *s_cfg, opkele::para
 
 	char *return_uri = Get_Ox_Storage(s_cfg->OpenIDClientName, state.c_str());
 	if (return_uri == NULL)
-		return show_error(r, s_cfg, "Incorrect Return URI");
+		return show_error(r, s_cfg, "error: Incorrect return URI");
 
 	r->args = NULL;
 
@@ -181,7 +181,8 @@ static int oic_check_session(mod_ox_config *s_cfg, const char *id_token, const c
 */
 int start_connect_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& params) 
 {
-	int i, ret;
+	unsigned i;
+	int ret;
 	bool info_changed = false;
 	const apr_array_header_t    *fields;
 	apr_table_entry_t           *e = 0;
@@ -207,13 +208,13 @@ int start_connect_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t
 		if (token_endpoint) free(token_endpoint);
 		if (client_id) free(client_id);
 		if (client_secret) free(client_secret);
-		if (ret < 0) return show_error(r, s_cfg, "Oxd failed to discovery");
+		if (ret < 0) return show_error(r, s_cfg, "oxd: OpenID Connect Discovery Failed");
 	} 
 	else	// changed
 	{
 		info_changed = true;
 		// Discovery & Register Client
-		if (ox_discovery(s_cfg) < 0) return show_error(r, s_cfg, "Oxd failed to discovery");
+		if (ox_discovery(s_cfg) < 0) return show_error(r, s_cfg, "oxd: OpenID Connect Discovery Failed");
 	}
 
 	char *issuer = Get_Ox_Storage(s_cfg->OpenIDClientName, "oxd.issuer");
@@ -226,7 +227,7 @@ int start_connect_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t
 		if (authorization_endpoint) free(authorization_endpoint);
 		if (client_id) free(client_id);
 
-		return show_error(r, s_cfg, "Oxd failed to discovery");
+		return show_error(r, s_cfg, "oxd: OpenID Connect Discovery Failed");
 	}
 
 	std::string identity = std::string(issuer);
@@ -267,7 +268,7 @@ int start_connect_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t
 		e = (apr_table_entry_t *) fields->elts;
 		if (fields->nelts > 0)
 		{
-			for(i = 0; i < (fields->nelts-1); i++) {
+			for(i = 0; i < (unsigned)(fields->nelts-1); i++) {
 				origin_headers += "\"";
 				origin_headers += e[i].key;
 				origin_headers += "\":\"";
@@ -400,7 +401,7 @@ int has_connect_session(request_rec *r, mod_ox_config *s_cfg, opkele::params_t& 
 			std::string valid_path(session.path);
 			// if found session has a valid path
 			if((valid_path==uri_path.substr(0, valid_path.size()) ||
-				(((uri_path.size()+1)==valid_path.size())) && (strncasecmp(uri_path.c_str(), valid_path.c_str(), uri_path.size()) == 0))
+				((((uri_path.size()+1)==valid_path.size())) && (strncasecmp(uri_path.c_str(), valid_path.c_str(), uri_path.size()) == 0)))
 				&& strcasecmp(session.hostname.c_str(), r->hostname)==0) 
 			{
 				const char* idchar = session.identity.c_str();
@@ -507,14 +508,14 @@ int validate_connect_session(request_rec *r, mod_ox_config *s_cfg, opkele::param
 	if (params.has_param("scope"))
 		scope = params.get_param("scope");
 	else
-		return show_error(r, s_cfg, "unauthorized");
+		return show_error(r, s_cfg, "error: unauthorized");
 
 	// Get state from params
 	std::string state;
 	if (params.has_param("state"))
 		state = params.get_param("state");
 	else
-		return show_error(r, s_cfg, "unauthorized");
+		return show_error(r, s_cfg, "error: unauthorized");
 
 	// session_id = session_id+"."+state
 	session_id = session_tmp+"."+state;
@@ -527,7 +528,7 @@ int validate_connect_session(request_rec *r, mod_ox_config *s_cfg, opkele::param
 		code = params.get_param("code");
 
 		if (ox_get_id_token(s_cfg, code.c_str(), s_cfg->OpenIDClientRedirectURIs, id_token, access_token, &time_out) < 0)
-			return show_error(r, s_cfg, "Could not get id_token");
+			return show_error(r, s_cfg, "oxd: obtain id_token failed");
 	}
 	// Implicit Flow
 	else
@@ -537,21 +538,21 @@ int validate_connect_session(request_rec *r, mod_ox_config *s_cfg, opkele::param
 		if (params.has_param("id_token"))
 			id_token = params.get_param("id_token");
 		else
-			return show_error(r, s_cfg, "unauthorized");
+			return show_error(r, s_cfg, "error: unauthorized");
 
 		// Get access token from params
 		std::string access_token;
 		if (params.has_param("access_token"))
 			access_token = params.get_param("access_token");
 		else
-			return show_error(r, s_cfg, "unauthorized");
+			return show_error(r, s_cfg, "error: unauthorized");
 
 		// Get expires_in from params
 		std::string expires_in;
 		if (params.has_param("expires_in"))
 			expires_in = params.get_param("expires_in");
 		else
-			return show_error(r, s_cfg, "unauthorized");
+			return show_error(r, s_cfg, "error: unauthorized");
 
 		time_out = (int)atoi(expires_in.c_str());
 	}
@@ -559,7 +560,7 @@ int validate_connect_session(request_rec *r, mod_ox_config *s_cfg, opkele::param
 	// Check status of id token
 	token_timeout = oic_check_session(s_cfg, id_token.c_str(), session_id.c_str());
 	if (token_timeout <= 0)
-		return show_error(r, s_cfg, "Oxd failed to check session");
+		return show_error(r, s_cfg, "oxd: OpenID Connect check session failed");
 
 	// Save paraams into memcached
 	Set_Ox_Storage(session_id.c_str(), "session_id", session_tmp.c_str(), time_out);

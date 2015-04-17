@@ -594,15 +594,15 @@ static int mod_ox_method_handler(request_rec *r) {
 		return DECLINED;
 	int auth_type = mod_ox_check_auth_type(s_cfg);
 	if (auth_type < 0)
-		return show_error(r, s_cfg, "Invalid OX parameters, Please check AuthnType and AuthzType in Apache");
+		return show_error(r, s_cfg, "conf: Invalid ox parameters, Please check AuthnType and AuthzType in ox.conf");
 
 	// 3. check config infos in Apache conf file
 	if (mod_ox_check_configs(r, s_cfg, auth_type) != 0)
-		return show_error(r, s_cfg, "Invalid OX parameters, Please check ox.conf in Apache");
+		return show_error(r, s_cfg, "conf: Invalid ox parameters, Please check AuthnType and AuthzType in ox.conf");
 
 	// 4. init memcached storage
 	if (Init_Ox_Storage(s_cfg->MemcachedHostAddr, s_cfg->MemcachedPortNum) != 0)
-		return show_error(r, s_cfg, "Failed to connecting Memcached Server");
+		return show_error(r, s_cfg, "memcached: Failed to connecting Memcached Server");
 
 	// 5. if access redirect, ok
 	ret = mod_ox_check_predefined_url(r, s_cfg);

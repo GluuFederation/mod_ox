@@ -394,7 +394,7 @@ int ox_register_resources(mod_ox_config *s_cfg)
 	int ret;
 	int responseLen;
 	char tmp[5];
-	int i;
+	unsigned i;
 
 	char *pat_token = Get_Ox_Storage(s_cfg->OpenIDClientName, "uma.pat_token");
 
@@ -582,7 +582,7 @@ int ox_register_ticket(mod_ox_config *s_cfg)
 	int ret;
 	int responseLen;
 	char tmp[5];
-	int i = 1;
+	unsigned i = 1;
 
 	char *pat_token = Get_Ox_Storage(s_cfg->OpenIDClientName, "uma.pat_token");
 	std::string id = std::string(s_cfg->UmaResourceName);
